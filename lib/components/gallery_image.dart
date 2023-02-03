@@ -21,7 +21,7 @@ class _GalleryImageState extends State<GalleryImage> {
       children: [
         Image.file(
           File(widget.image.path),
-          fit: BoxFit.fill,
+          fit: BoxFit.cover,
         )
       ]
     );

@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
+import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/pages/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
-
-import 'data/tagged_image.dart';
+import 'package:quick_tagger/utils/file_utils.dart' as futils;
 
 void main() {
   runApp(const MyApp());
@@ -17,6 +20,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Quick Tagger',
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate
+      ],
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -29,13 +37,17 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+      ),
+      themeMode: ThemeMode.dark,
+      home: const HomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -49,13 +61,30 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  TagfileType tagfileType = TagfileType.hydrusRepo;
+class _HomePageState extends State<HomePage> {
+  TagSeparator tagSeparator = TagSeparator.lineBreak;
+  TagSpaceCharacter tagSpaceCharacter = TagSpaceCharacter.space;
   String? folder;
+  bool autoSaveTags = true;
   List<TaggedImage> images = List.empty();
+
+  onPathChanged(path) async {
+    setState(() {
+      folder = path;
+    });
+
+    final newImages = List<TaggedImage>.empty(growable: true);
+    await for (final file in Directory(path).list()) {
+      if (futils.isSupportedFile(file.path)) {
+        newImages.add(TaggedImage.noTags(file.path));
+      }
+    }
+
+    setState(() {images = newImages;});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
-        child: Column(
+        child: Row(
           // Column is also a layout widget. It takes a list of children and
           // arranges them vertically. By default, it sizes itself to fit its
           // children horizontally, and tries to be as tall as its parent.
@@ -93,15 +122,24 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             Expanded(
               flex: 3,
-              child: Options(
-                tagfileType: tagfileType,
-                folder: folder,
-                onFolderChanged: (path) => setState(() {
-                  folder = path;
-                }),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Options(
+                  tagSeparator: tagSeparator,
+                  tagSpaceCharacter: tagSpaceCharacter,
+                  autoSaveTags: autoSaveTags,
+                  folder: folder,
+                  onFolderChanged: onPathChanged,
+                  onTagSeparatorChanged: (val) => setState(() {tagSeparator = val ?? tagSeparator;}),
+                  onTagSpaceCharacterChanged: (val) => setState(() {tagSpaceCharacter = val ?? tagSpaceCharacter;}),
+                  onAutoSaveTagsChanged: (val) => setState(() {autoSaveTags = val ?? autoSaveTags;}),
+                ),
               ),
             ),
-            Expanded(flex: 7, child: Gallery(images: images)),
+            Expanded(flex: 7, child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Gallery(images: images),
+            )),
           ],
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.

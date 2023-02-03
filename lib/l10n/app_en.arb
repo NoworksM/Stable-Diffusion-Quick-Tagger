@@ -1,0 +1,9 @@
+{
+    "hydrusNetworkTagType": "Hydrus Network",
+    "hydrusNetworkTagTypeDescription": "",
+    "@hydrusNetworkTagTypeDescription": {
+        "description": "Description of the tag file type for the Hydrus Network"
+    },
+    "danbooruTagType": "Danbooru",
+    "danbooruTagTypeDescription": "Underscore spaced files"
+}
