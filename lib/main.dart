@@ -76,10 +76,14 @@ class _HomePageState extends State<HomePage> {
   List<TaggedImage> images = List.empty();
   final StreamController<List<TagCount>> tagCountStreamController = StreamController();
   String? hoveredTag;
+  Set<String> includedTags = Set<String>.identity();
+  Set<String> excludedTags = Set<String>.identity();
 
   onPathChanged(path) async {
     setState(() {
       folder = path;
+      includedTags.clear();
+      excludedTags.clear();
     });
 
     final tagCounts = List<TagCount>.empty(growable: true);
@@ -106,6 +110,102 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {images = newImages;});
+  }
+
+  List<TaggedImage> get filteredImages {
+    final filteredImages = List<TaggedImage>.empty(growable: true);
+
+    for (final image in images) {
+      final set = image.tags.toSet();
+
+      bool hasExcluded = false;
+
+      for (final excluded in excludedTags) {
+        if (set.contains(excluded)) {
+          hasExcluded = true;
+          break;
+        }
+      }
+
+      if (hasExcluded) {
+        continue;
+      }
+
+      if (set.containsAll(includedTags)) {
+        filteredImages.add(image);
+      }
+    }
+
+    return filteredImages;
+  }
+
+  List<TagCount> get filteredTagCounts {
+    final tagCounts = List<TagCount>.empty(growable: true);
+
+    for (final image in filteredImages) {
+      for (final tag in image.tags) {
+        bool isFilteredTag = false;
+
+        for (final included in includedTags) {
+          if (included == tag) {
+            isFilteredTag = true;
+            break;
+          }
+        }
+
+        if (isFilteredTag) {
+          continue;
+        }
+
+        for (final excluded in excludedTags) {
+          if (excluded == tag) {
+            isFilteredTag = true;
+            break;
+          }
+        }
+
+        if (isFilteredTag) {
+          continue;
+        }
+
+        final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag,
+            orElse: () => TagCount(tag, 0));
+
+        if (tagCount.count == 0) {
+          tagCounts.add(tagCount);
+        }
+
+        tagCount.count++;
+      }
+    }
+
+    return tagCounts;
+  }
+
+  _onIncludedTagSelected(String tag) {
+    setState(() {
+      if (includedTags.contains(tag)) {
+        includedTags.remove(tag);
+      } else {
+        includedTags.add(tag);
+      }
+    });
+    setState(() {
+      tagCountStreamController.add(filteredTagCounts);
+    });
+  }
+
+  _onExcludedTagSelected(String tag) {
+    setState(() {
+      if (excludedTags.contains(tag)) {
+        excludedTags.remove(tag);
+      } else {
+        excludedTags.add(tag);
+      }
+    });
+    setState(() {
+      tagCountStreamController.add(filteredTagCounts);
+    });
   }
 
   @override
@@ -162,15 +262,20 @@ class _HomePageState extends State<HomePage> {
             Expanded(flex: 6, child: Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Gallery(
-                images: images,
+                images: filteredImages,
                 hoveredTag: hoveredTag,
               ),
             )),
             Expanded(flex: 2,
                 child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: TagSidebar(stream: tagCountStreamController.stream,
+              child: TagSidebar(
+                stream: tagCountStreamController.stream,
+                includedTags: includedTags.toList(),
+                excludedTags: excludedTags.toList(),
                 onTagHover: (t) => setState(() {hoveredTag = t;}),
+                onIncludedTagSelected: _onIncludedTagSelected,
+                onExcludedTagSelected: _onExcludedTagSelected,
                 ),
             ))
           ],

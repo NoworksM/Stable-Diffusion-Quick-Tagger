@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:quick_tagger/components/tag_sidebar_item.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 
 class TagSidebar extends StatefulWidget {
   final Stream<List<TagCount>> stream;
   final Function(String?)? onTagHover;
+  final List<String> includedTags;
+  final List<String> excludedTags;
+  final Function(String)? onIncludedTagSelected;
+  final Function(String)? onExcludedTagSelected;
 
-  const TagSidebar({super.key, required this.stream, this.onTagHover});
+  const TagSidebar(
+      {super.key,
+      required this.stream,
+      this.onTagHover,
+      required this.includedTags,
+      required this.excludedTags,
+      this.onIncludedTagSelected,
+      this.onExcludedTagSelected});
 
   @override
   State<TagSidebar> createState() => _TagSidebarState();
@@ -19,20 +31,45 @@ class _TagSidebarState extends State<TagSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-        children: [
+    return Column(children: [
       Row(
-          children: [
-            IconButton(
-                onPressed: () => setState(() {sort = _TagSort.count;}),
-                icon: const Icon(Icons.sort),
-                color: sort == _TagSort.count ? Theme.of(context).colorScheme.secondary : null),
-            IconButton(
-                onPressed: () => setState(() {sort = _TagSort.alphabetical; }),
-                icon: const Icon(Icons.sort_by_alpha),
-                color: sort == _TagSort.alphabetical ? Theme.of(context).colorScheme.secondary : null),
-          ],
-        ),
+        children: [
+          IconButton(
+              onPressed: () => setState(() {
+                    sort = _TagSort.count;
+                  }),
+              icon: const Icon(Icons.sort),
+              color: sort == _TagSort.count
+                  ? Theme.of(context).colorScheme.secondary
+                  : null),
+          IconButton(
+              onPressed: () => setState(() {
+                    sort = _TagSort.alphabetical;
+                  }),
+              icon: const Icon(Icons.sort_by_alpha),
+              color: sort == _TagSort.alphabetical
+                  ? Theme.of(context).colorScheme.secondary
+                  : null),
+        ],
+      ),
+      Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: widget.includedTags
+              .map((t) => TagSelectedSidebarItem(
+                    tag: t,
+                    included: true,
+                    onSelected: (t) => widget.onIncludedTagSelected?.call(t),
+                  ))
+              .toList()),
+      Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: widget.excludedTags
+              .map((t) => TagSelectedSidebarItem(
+                    tag: t,
+                    included: false,
+                    onSelected: (t) => widget.onExcludedTagSelected?.call(t),
+                  ))
+              .toList()),
       Expanded(
         child: StreamBuilder<List<TagCount>>(
           stream: widget.stream,
@@ -51,25 +88,12 @@ class _TagSidebarState extends State<TagSidebar> {
                   : snapshot.data!.sort((l, r) => l.tag.compareTo(r.tag));
               return ListView.builder(
                 itemCount: snapshot.data!.length,
-                itemBuilder: (context, idx) {
-                  final tc = snapshot.data![idx];
-
-                  final textStyle = tc.tag == hoveredTag ? TextStyle(color: Theme.of(context).colorScheme.secondary) : null;
-                  final bgColor = tc.tag == hoveredTag ? Theme.of(context).dialogBackgroundColor : null;
-
-                  return MouseRegion(
-                    onEnter: (e) { setState(() {hoveredTag = tc.tag;}); widget.onTagHover?.call(tc.tag); },
-                    onExit: (e) { setState(() {hoveredTag = null;}); widget.onTagHover?.call(null); },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.fastOutSlowIn,
-                      decoration: BoxDecoration(color: bgColor),
-                      child: Text(
-                          '${tc.tag} (${tc.count})',
-                      style: textStyle),
-                    ),
-                  );
-                },
+                itemBuilder: (context, idx) => TagSidebarItem(
+                  tagCount: snapshot.data![idx],
+                  onHover: (t) => widget.onTagHover?.call(t),
+                  onInclude: (t) => widget.onIncludedTagSelected?.call(t),
+                  onExclude: (t) => widget.onExcludedTagSelected?.call(t),
+                ),
               );
             }
           },
