@@ -16,14 +16,23 @@ class GalleryImage extends StatefulWidget {
 class _GalleryImageState extends State<GalleryImage> {
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.file(
-          File(widget.image.path),
-          fit: BoxFit.cover,
-        )
-      ]
-    );
+    return Stack(fit: StackFit.expand, children: [
+      Image.file(
+        File(widget.image.path),
+        fit: BoxFit.cover,
+      ),
+      Column(
+        children: [
+          const Spacer(),
+          Flexible(
+            fit: FlexFit.loose,
+            child: Container(
+              color: Theme.of(context).dialogBackgroundColor.withAlpha(155),
+              child: Center(child: Text('${widget.image.tags.length} Tags')),
+            ),
+          ),
+        ],
+      )
+    ]);
   }
 }

@@ -9,7 +9,7 @@ isSupportedFile(path) => _supportedExtensions.contains(p.extension(path));
 getPossibleTagFilesForImageFile(path) {
   return [
     '$path.txt',
-    '${p.basenameWithoutExtension(path)}.txt'
+    '${p.join(p.dirname(path), p.basenameWithoutExtension(path))}.txt'
   ];
 }
 

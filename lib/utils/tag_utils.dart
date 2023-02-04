@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as futils;
 
-parseTags(path, tagFileContents) {
+parseTags(String path, String tagFileContents) {
   TagSeparator? separator;
   TagSpaceCharacter? spaceCharacter;
 
@@ -22,7 +22,7 @@ parseTags(path, tagFileContents) {
 
       tags.add(builder.toString().trim());
       builder.clear();
-    } else if (char != ' ') {
+    } else {
       if (char == ' ') {
         spaceCharacter = TagSpaceCharacter.space;
       } else if (char == '_') {
@@ -31,10 +31,10 @@ parseTags(path, tagFileContents) {
 
       builder.write(char);
     }
+  }
 
-    if (builder.toString().trim().isNotEmpty) {
-      tags.add(builder.toString().trim());
-    }
+  if (builder.toString().trim().isNotEmpty) {
+    tags.add(builder.toString().trim());
   }
 
   return TagFile(path, tags, separator ?? TagSeparator.lineBreak, spaceCharacter ?? TagSpaceCharacter.space);
@@ -43,7 +43,7 @@ parseTags(path, tagFileContents) {
 readTagsFromFile(path) async {
   final file = File(path);
 
-  final contents = file.readAsString();
+  final contents = await file.readAsString();
 
   return parseTags(path, contents);
 }
