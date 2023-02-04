@@ -27,7 +27,11 @@ class _TagSidebarState extends State<TagSidebar> {
           return const Center(child: Text('No tags found'));
         } else {
           sort == _TagSort.count
-            ? snapshot.data!.sort((l, r) => l.count.compareTo(r.count) * -1)
+            ? snapshot.data!.sort((l, r) {
+              final countCompare = l.count.compareTo(r.count) * -1;
+
+              return countCompare == 0 ? l.tag.compareTo(r.tag) : countCompare;
+            })
             : snapshot.data!.sort((l, r) => l.tag.compareTo(r.tag));
           return ListView.builder(
             itemCount: snapshot.data!.length,
