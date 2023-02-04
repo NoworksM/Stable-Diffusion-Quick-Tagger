@@ -140,6 +140,7 @@ class _HomePageState extends State<HomePage> {
           // axis because Columns are vertical (the cross axis would be
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Expanded(
               flex: 2,
@@ -161,7 +162,8 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.only(left: 8.0),
               child: Gallery(images: images),
             )),
-            Expanded(flex: 2, child: Padding(
+            Expanded(flex: 2,
+                child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: TagSidebar(stream: tagCountStreamController.stream),
             ))

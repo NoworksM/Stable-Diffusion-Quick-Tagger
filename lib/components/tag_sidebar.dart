@@ -17,15 +17,14 @@ class _TagSidebarState extends State<TagSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      Flexible(
-        child: Row(
+    return Column(
+        children: [
+      Row(
           children: [
             IconButton(onPressed: () => setState(() {sort = _TagSort.count;}), icon: const Icon(Icons.sort)),
             IconButton(onPressed: () => setState(() {sort = _TagSort.alphabetical; }), icon: const Icon(Icons.sort_by_alpha)),
           ],
         ),
-      ),
       Expanded(
         child: StreamBuilder<List<TagCount>>(
           stream: widget.stream,
