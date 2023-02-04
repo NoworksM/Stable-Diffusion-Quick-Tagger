@@ -23,13 +23,16 @@ class _GalleryImageState extends State<GalleryImage> {
       ),
       Column(
         children: [
-          const Spacer(),
-          Flexible(
-            fit: FlexFit.loose,
-            child: Container(
-              color: Theme.of(context).dialogBackgroundColor.withAlpha(155),
-              child: Center(child: Text('${widget.image.tags.length} Tags')),
-            ),
+          const Expanded(child: Spacer()),
+          Container(
+            color: Theme.of(context).dialogBackgroundColor.withAlpha(155),
+            padding: const EdgeInsets.all(4.0),
+            child: Center(child: Row(
+              children: [
+                const Icon(Icons.sell),
+                Text('${widget.image.tags.length} Tags'),
+              ],
+            )),
           ),
         ],
       )
