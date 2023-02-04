@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:quick_tagger/components/tag_sidebar.dart';
+import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/pages/gallery.dart';
@@ -71,16 +74,31 @@ class _HomePageState extends State<HomePage> {
   String? folder;
   bool autoSaveTags = true;
   List<TaggedImage> images = List.empty();
+  final StreamController<List<TagCount>> tagCountStreamController = StreamController();
 
   onPathChanged(path) async {
     setState(() {
       folder = path;
     });
 
+    final tagCounts = List<TagCount>.empty(growable: true);
+
     final newImages = List<TaggedImage>.empty(growable: true);
     await for (final file in Directory(path).list()) {
       if (futils.isSupportedFile(file.path)) {
         final tags = await tagutils.getTagsForFile(file.path);
+
+        for (final tag in tags) {
+          final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag, orElse: () => TagCount(tag, 0));
+
+          if (tagCount.count == 0) {
+            tagCounts.add(tagCount);
+          }
+
+          tagCount.count++;
+        }
+
+        tagCountStreamController.add(tagCounts);
 
         newImages.add(TaggedImage(file.path, tags));
       }
@@ -124,7 +142,7 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Expanded(
-              flex: 3,
+              flex: 2,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Options(
@@ -139,10 +157,14 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            Expanded(flex: 7, child: Padding(
+            Expanded(flex: 6, child: Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Gallery(images: images),
             )),
+            Expanded(flex: 2, child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TagSidebar(stream: tagCountStreamController.stream),
+            ))
           ],
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
