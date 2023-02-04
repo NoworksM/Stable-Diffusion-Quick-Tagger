@@ -7,6 +7,7 @@ import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/pages/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as futils;
+import 'package:quick_tagger/utils/tag_utils.dart' as tagutils;
 
 void main() {
   runApp(const MyApp());
@@ -79,7 +80,9 @@ class _HomePageState extends State<HomePage> {
     final newImages = List<TaggedImage>.empty(growable: true);
     await for (final file in Directory(path).list()) {
       if (futils.isSupportedFile(file.path)) {
-        newImages.add(TaggedImage.noTags(file.path));
+        final tags = await tagutils.getTagsForFile(file.path);
+
+        newImages.add(TaggedImage(file.path, tags));
       }
     }
 
@@ -137,7 +140,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Expanded(flex: 7, child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.only(left: 8.0),
               child: Gallery(images: images),
             )),
           ],

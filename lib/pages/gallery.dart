@@ -12,7 +12,7 @@ class Gallery extends StatelessWidget {
   Widget build(BuildContext context) {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 200,
+        maxCrossAxisExtent: 300,
         childAspectRatio: 1,
         crossAxisSpacing: 0,
         mainAxisSpacing: 0,

@@ -3,47 +3,87 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
+import 'package:quick_tagger/utils/file_utils.dart' as futils;
 
-detectTagFileType(File tagFile) async {
-  final contents = await tagFile.readAsString();
+parseTags(path, tagFileContents) {
+  TagSeparator? separator;
+  TagSpaceCharacter? spaceCharacter;
 
-  var hasUnderscore = false;
-  var hasSpaces = false;
-  var hasLineBreaks = false;
+  final tags = List<String>.empty(growable: true);
+  final builder = StringBuffer();
 
-  for (final char in contents.characters) {
-    switch (char) {
-      case '_':
-        hasUnderscore = true;
-        break;
-      case ' ':
-        hasSpaces = true;
-        break;
-      case '\n':
-        hasLineBreaks = true;
-        break;
+  for (final char in tagFileContents.characters) {
+    if (char == ',' || char == '\n') {
+      if (char == ',') {
+        separator = TagSeparator.comma;
+      } else if (char == '\n') {
+        separator = TagSeparator.lineBreak;
+      }
+
+      tags.add(builder.toString().trim());
+      builder.clear();
+    } else if (char != ' ') {
+      if (char == ' ') {
+        spaceCharacter = TagSpaceCharacter.space;
+      } else if (char == '_') {
+        spaceCharacter = TagSpaceCharacter.underscore;
+      }
+
+      builder.write(char);
+    }
+
+    if (builder.toString().trim().isNotEmpty) {
+      tags.add(builder.toString().trim());
     }
   }
 
-  throw UnimplementedError();
-
-  // if (hasLineBreaks && hasUnderscore && !hasSpaces) {
-  //   return TagfileType.danbooru;
-  // } else if (hasLineBreaks && hasSpaces) {
-  //   return TagfileType.hydrusRepo;
-  // } else if (hasLineBreaks) {
-  //   return TagfileType.stableDiffusion
-  // }
+  return TagFile(path, tags, separator ?? TagSeparator.lineBreak, spaceCharacter ?? TagSpaceCharacter.space);
 }
 
-parseStableDiffusionTags(tagFile) {
-  throw UnimplementedError();
+readTagsFromFile(path) async {
+  final file = File(path);
+
+  final contents = file.readAsString();
+
+  return parseTags(path, contents);
 }
 
-parseDanbooruTags(tagFile) {
-  throw UnimplementedError();
+readTagsFromFileSync(path) {
+  final file = File(path);
+
+  final contents = file.readAsStringSync();
+
+  return parseTags(path, contents);
 }
 
-parseTags(tagFile) {
-  throw UnimplementedError();
+getTagsForFile(path) async {
+  final files = await futils.getTagFilesForImageFile(path);
+
+  final tags = <String>{};
+
+  for (final path in files) {
+    final tagFile = await readTagsFromFile(path);
+
+    for (final tag in tagFile.tags) {
+      tags.add(tag);
+    }
+  }
+
+  return tags;
+}
+
+getTagsForFileSync(path) {
+  final files = futils.getTagFilesForImageFileSync(path);
+
+  final tags = <String>{};
+
+  for (final path in files) {
+    final fileTags = readTagsFromFileSync(path);
+
+    for (final tag in fileTags) {
+      tags.add(tag);
+    }
+  }
+
+  return tags;
 }

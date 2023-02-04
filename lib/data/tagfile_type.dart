@@ -33,3 +33,25 @@ extension TagSpaceCharacterExtensions on TagSpaceCharacter {
     }
   }
 }
+
+class TagType {
+  final TagSeparator separator;
+  final TagSpaceCharacter spaceCharacter;
+
+  TagType(this.separator, this.spaceCharacter);
+}
+
+class TagFile {
+  final String path;
+  final TagSeparator separator;
+  final TagSpaceCharacter spaceCharacter;
+  final List<String> tags;
+
+  TagFile(this.path, this.tags, this.separator, this.spaceCharacter);
+
+  TagFile.fromTagType(this.path, this.tags, TagType tagType)
+    : separator = tagType.separator,
+      spaceCharacter = tagType.spaceCharacter;
+
+  TagType get tagType => TagType(separator, spaceCharacter);
+}

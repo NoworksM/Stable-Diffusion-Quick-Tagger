@@ -1,8 +1,8 @@
 class TaggedImage {
   final String path;
-  final List<String> tags;
+  final Set<String> tags;
 
   TaggedImage(this.path, this.tags);
   TaggedImage.noTags(this.path)
-    : tags = List.empty(growable: false);
+    : tags = Set.identity();
 }
