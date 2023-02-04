@@ -3,8 +3,9 @@ import 'package:quick_tagger/data/tag_count.dart';
 
 class TagSidebar extends StatefulWidget {
   final Stream<List<TagCount>> stream;
+  final Function(String?)? onTagHover;
 
-  const TagSidebar({super.key, required this.stream});
+  const TagSidebar({super.key, required this.stream, this.onTagHover});
 
   @override
   State<TagSidebar> createState() => _TagSidebarState();
@@ -14,6 +15,7 @@ enum _TagSort { count, alphabetical }
 
 class _TagSidebarState extends State<TagSidebar> {
   _TagSort sort = _TagSort.count;
+  String? hoveredTag;
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +52,23 @@ class _TagSidebarState extends State<TagSidebar> {
               return ListView.builder(
                 itemCount: snapshot.data!.length,
                 itemBuilder: (context, idx) {
-                  return Text(
-                      '${snapshot.data![idx].tag} (${snapshot.data![idx].count})');
+                  final tc = snapshot.data![idx];
+
+                  final textStyle = tc.tag == hoveredTag ? TextStyle(color: Theme.of(context).colorScheme.secondary) : null;
+                  final bgColor = tc.tag == hoveredTag ? Theme.of(context).dialogBackgroundColor : null;
+
+                  return MouseRegion(
+                    onEnter: (e) { setState(() {hoveredTag = tc.tag;}); widget.onTagHover?.call(tc.tag); },
+                    onExit: (e) { setState(() {hoveredTag = null;}); widget.onTagHover?.call(null); },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.fastOutSlowIn,
+                      decoration: BoxDecoration(color: bgColor),
+                      child: Text(
+                          '${tc.tag} (${tc.count})',
+                      style: textStyle),
+                    ),
+                  );
                 },
               );
             }

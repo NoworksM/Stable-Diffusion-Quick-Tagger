@@ -75,6 +75,7 @@ class _HomePageState extends State<HomePage> {
   bool autoSaveTags = true;
   List<TaggedImage> images = List.empty();
   final StreamController<List<TagCount>> tagCountStreamController = StreamController();
+  String? hoveredTag;
 
   onPathChanged(path) async {
     setState(() {
@@ -160,12 +161,17 @@ class _HomePageState extends State<HomePage> {
             ),
             Expanded(flex: 6, child: Padding(
               padding: const EdgeInsets.only(left: 8.0),
-              child: Gallery(images: images),
+              child: Gallery(
+                images: images,
+                hoveredTag: hoveredTag,
+              ),
             )),
             Expanded(flex: 2,
                 child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: TagSidebar(stream: tagCountStreamController.stream),
+              child: TagSidebar(stream: tagCountStreamController.stream,
+                onTagHover: (t) => setState(() {hoveredTag = t;}),
+                ),
             ))
           ],
         ),
