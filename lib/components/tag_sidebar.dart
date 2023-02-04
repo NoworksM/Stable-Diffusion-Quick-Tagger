@@ -21,8 +21,14 @@ class _TagSidebarState extends State<TagSidebar> {
         children: [
       Row(
           children: [
-            IconButton(onPressed: () => setState(() {sort = _TagSort.count;}), icon: const Icon(Icons.sort)),
-            IconButton(onPressed: () => setState(() {sort = _TagSort.alphabetical; }), icon: const Icon(Icons.sort_by_alpha)),
+            IconButton(
+                onPressed: () => setState(() {sort = _TagSort.count;}),
+                icon: const Icon(Icons.sort),
+                color: sort == _TagSort.count ? Theme.of(context).colorScheme.secondary : null),
+            IconButton(
+                onPressed: () => setState(() {sort = _TagSort.alphabetical; }),
+                icon: const Icon(Icons.sort_by_alpha),
+                color: sort == _TagSort.alphabetical ? Theme.of(context).colorScheme.secondary : null),
           ],
         ),
       Expanded(
