@@ -106,10 +106,10 @@ class _HomePageState extends State<HomePage> {
           tagCount.count++;
         }
 
+        newImages.add(TaggedImage(file.path, tags));
+
         _imageStreamController.add(newImages);
         _tagCountStreamController.add(tagCounts);
-
-        newImages.add(TaggedImage(file.path, tags));
       }
     }
 
