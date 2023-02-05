@@ -243,7 +243,7 @@ class _HomePageState extends State<HomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Expanded(
+            Flexible(
               flex: 2,
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -266,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                 hoveredTag: hoveredTag,
               ),
             )),
-            Expanded(flex: 2,
+            Flexible(flex: 2,
                 child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: TagSidebar(

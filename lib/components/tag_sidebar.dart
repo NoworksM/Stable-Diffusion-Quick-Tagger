@@ -9,10 +9,12 @@ class TagSidebar extends StatefulWidget {
   final List<String> excludedTags;
   final Function(String)? onIncludedTagSelected;
   final Function(String)? onExcludedTagSelected;
+  final bool selectable;
 
   const TagSidebar(
       {super.key,
       required this.stream,
+      this.selectable = true,
       this.onTagHover,
       required this.includedTags,
       required this.excludedTags,
@@ -90,6 +92,7 @@ class _TagSidebarState extends State<TagSidebar> {
                 itemCount: snapshot.data!.length,
                 itemBuilder: (context, idx) => TagSidebarItem(
                   tagCount: snapshot.data![idx],
+                  selectable: widget.selectable,
                   onHover: (t) => widget.onTagHover?.call(t),
                   onInclude: (t) => widget.onIncludedTagSelected?.call(t),
                   onExclude: (t) => widget.onExcludedTagSelected?.call(t),

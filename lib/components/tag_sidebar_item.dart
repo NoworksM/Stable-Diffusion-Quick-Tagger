@@ -3,11 +3,12 @@ import 'package:quick_tagger/data/tag_count.dart';
 
 class TagSidebarItem extends StatefulWidget {
   final TagCount tagCount;
+  final bool selectable;
   final Function(String)? onInclude;
   final Function(String)? onExclude;
   final Function(String?)? onHover;
 
-  const TagSidebarItem({super.key, required this.tagCount, this.onInclude, this.onExclude, this.onHover});
+  const TagSidebarItem({super.key, required this.tagCount, this.selectable = true, this.onInclude, this.onExclude, this.onHover});
   
 
   @override
@@ -20,28 +21,32 @@ class _TagSidebarItemState extends State<TagSidebarItem> {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = isHovered
+    final textStyle = isHovered && widget.selectable
         ? TextStyle(color: Theme.of(context).colorScheme.secondary)
         : null;
-    final bgColor = isHovered
+    final bgColor = isHovered && widget.selectable
         ? Theme.of(context).dialogBackgroundColor
         : null;
 
     return GestureDetector(
-      onTap: () => widget.onInclude?.call(widget.tagCount.tag),
-      onTertiaryTapUp: (e) => widget.onExclude?.call(widget.tagCount.tag),
+      onTap: () { if (widget.selectable) widget.onInclude?.call(widget.tagCount.tag); },
+      onTertiaryTapUp: (e) { if (widget.selectable) widget.onExclude?.call(widget.tagCount.tag); },
       child: MouseRegion(
         onEnter: (e) {
-          setState(() {
-            isHovered = true;
-          });
-          widget.onHover?.call(widget.tagCount.tag);
+          if (widget.selectable) {
+            setState(() {
+              isHovered = true;
+            });
+            widget.onHover?.call(widget.tagCount.tag);
+          }
         },
         onExit: (e) {
-          setState(() {
-            isHovered = false;
-          });
-          widget.onHover?.call(null);
+          if (widget.selectable) {
+            setState(() {
+              isHovered = false;
+            });
+            widget.onHover?.call(null);
+          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
