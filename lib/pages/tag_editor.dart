@@ -18,6 +18,7 @@ class TagEditor extends StatefulWidget {
 class _TagEditorState extends State<TagEditor> {
   final StreamController<List<TagCount>> _tagCountStreamController =
       StreamController();
+  late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
@@ -46,7 +47,7 @@ class _TagEditorState extends State<TagEditor> {
               Flexible(
                   flex: 2,
                   child: TagSidebar(
-                    stream: _tagCountStreamController.stream.asBroadcastStream(),
+                    stream: _tagCountStream,
                     excludedTags: const [],
                     includedTags: const [],
                   ))

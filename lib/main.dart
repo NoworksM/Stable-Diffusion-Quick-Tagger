@@ -74,7 +74,10 @@ class _HomePageState extends State<HomePage> {
   String? folder;
   bool autoSaveTags = true;
   List<TaggedImage> images = List.empty();
-  final StreamController<List<TagCount>> tagCountStreamController = StreamController();
+  final StreamController<List<TaggedImage>> _imageStreamController = StreamController();
+  late final Stream<List<TaggedImage>> _imageStream = _imageStreamController.stream.asBroadcastStream();
+  final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
+  late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
   String? hoveredTag;
   Set<String> includedTags = Set<String>.identity();
   Set<String> excludedTags = Set<String>.identity();
@@ -103,7 +106,8 @@ class _HomePageState extends State<HomePage> {
           tagCount.count++;
         }
 
-        tagCountStreamController.add(tagCounts);
+        _imageStreamController.add(newImages);
+        _tagCountStreamController.add(tagCounts);
 
         newImages.add(TaggedImage(file.path, tags));
       }
@@ -191,7 +195,8 @@ class _HomePageState extends State<HomePage> {
       }
     });
     setState(() {
-      tagCountStreamController.add(filteredTagCounts);
+      _imageStreamController.add(filteredImages);
+      _tagCountStreamController.add(filteredTagCounts);
     });
   }
 
@@ -204,7 +209,8 @@ class _HomePageState extends State<HomePage> {
       }
     });
     setState(() {
-      tagCountStreamController.add(filteredTagCounts);
+      _imageStreamController.add(filteredImages);
+      _tagCountStreamController.add(filteredTagCounts);
     });
   }
 
@@ -262,7 +268,7 @@ class _HomePageState extends State<HomePage> {
             Expanded(flex: 6, child: Padding(
               padding: const EdgeInsets.only(left: 8.0),
               child: Gallery(
-                images: filteredImages,
+                stream: _imageStream,
                 hoveredTag: hoveredTag,
               ),
             )),
@@ -270,7 +276,7 @@ class _HomePageState extends State<HomePage> {
                 child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: TagSidebar(
-                stream: tagCountStreamController.stream,
+                stream: _tagCountStream,
                 includedTags: includedTags.toList(),
                 excludedTags: excludedTags.toList(),
                 onTagHover: (t) => setState(() {hoveredTag = t;}),
