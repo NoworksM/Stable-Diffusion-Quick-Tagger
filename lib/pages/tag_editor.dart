@@ -22,10 +22,14 @@ class TagEditor extends StatefulWidget {
 class _TagEditorState extends State<TagEditor> {
   final StreamController<List<TagCount>> _tagCountStreamController =
       StreamController();
-  final TextEditingController textController = TextEditingController();
+  final TextEditingController _tagTextController = TextEditingController();
   late final Stream<List<TagCount>> _tagCountStream =
       _tagCountStreamController.stream.asBroadcastStream();
   late FocusNode pageFocusNode;
+  late FocusNode textFocusNode;
+  late final List<String> tags;
+  final List<String> addedTags = List.empty(growable: true);
+  final List<String> removedTags = List.empty(growable: true);
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
@@ -36,16 +40,53 @@ class _TagEditorState extends State<TagEditor> {
     super.initState();
 
     pageFocusNode = FocusNode();
+    textFocusNode = FocusNode();
 
-    _tagCountStreamController
-        .add(widget.image.tags.map((t) => TagCount(t, 1)).toList());
+    tags = List.from(widget.image.tags, growable: true);
+
+    _updateTagCounts();
   }
 
   @override
   void dispose() {
     pageFocusNode.dispose();
+    textFocusNode.dispose();
 
     super.dispose();
+  }
+
+  /// Update tag counts in the UI
+  _updateTagCounts() => _tagCountStreamController
+      .add(tags.map((t) => TagCount(t, 1)).toList());
+
+  onTagSubmitted(String tag) {
+    final tag = _tagTextController.value.text;
+
+    _tagTextController.clear();
+
+    setState(() {
+      if (tags.contains(tag)) {
+        tags.remove(tag);
+
+        if (addedTags.contains(tag)) {
+          addedTags.remove(tag);
+        } else {
+          removedTags.add(tag);
+        }
+      } else {
+        tags.add(tag);
+
+        if (removedTags.contains(tag)) {
+          removedTags.remove(tag);
+        } else {
+          addedTags.add(tag);
+        }
+      }
+
+      _updateTagCounts();
+    });
+
+    textFocusNode.requestFocus();
   }
 
   @override
@@ -89,15 +130,19 @@ class _TagEditorState extends State<TagEditor> {
                           flex: 2,
                           child: TagSidebar(
                             stream: _tagCountStream,
-                            excludedTags: const [],
-                            includedTags: const [],
+                            excludedTags: removedTags,
+                            includedTags: addedTags,
                           ))
                     ],
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextField(controller: textController),
+                  child: TextField(
+                    focusNode: textFocusNode,
+                    controller: _tagTextController,
+                    onSubmitted: onTagSubmitted,
+                  ),
                 )
               ],
             ),
