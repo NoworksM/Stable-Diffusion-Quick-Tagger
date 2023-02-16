@@ -1,3 +1,6 @@
+final _toSpacesRegex = RegExp(r'_+');
+final _toUnderscoreRegex = RegExp(r'\w+');
+
 enum TagSeparator {
   comma,
   lineBreak
@@ -19,6 +22,17 @@ extension TagSeparatorExtensions on TagSeparator {
         throw ArgumentError.value(this);
     }
   }
+
+  String value() {
+    switch (this) {
+      case TagSeparator.comma:
+        return ',';
+      case TagSeparator.lineBreak:
+        return '\r\n';
+      default:
+        throw ArgumentError.value(this);
+    }
+  }
 }
 
 extension TagSpaceCharacterExtensions on TagSpaceCharacter {
@@ -30,6 +44,24 @@ extension TagSpaceCharacterExtensions on TagSpaceCharacter {
         return '_';
       default:
         throw ArgumentError.value(this);
+    }
+  }
+
+  String value() {
+    switch (this) {
+      case TagSpaceCharacter.space:
+        return ' ';
+      case TagSpaceCharacter.underscore:
+        return '_';
+    }
+  }
+
+  String format(String tag) {
+    switch (this) {
+      case TagSpaceCharacter.space:
+        return tag.replaceAll(_toSpacesRegex, value());
+      case TagSpaceCharacter.underscore:
+        return tag.replaceAll(_toUnderscoreRegex, value());
     }
   }
 }

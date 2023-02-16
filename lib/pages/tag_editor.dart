@@ -33,8 +33,6 @@ class _TagEditorState extends State<TagEditor> {
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
-  _save() {}
-
   @override
   void initState() {
     super.initState();
@@ -56,8 +54,8 @@ class _TagEditorState extends State<TagEditor> {
   }
 
   /// Update tag counts in the UI
-  _updateTagCounts() => _tagCountStreamController
-      .add(tags.map((t) => TagCount(t, 1)).toList());
+  _updateTagCounts() =>
+      _tagCountStreamController.add(tags.map((t) => TagCount(t, 1)).toList());
 
   onTagSubmitted(String tag) {
     final tag = _tagTextController.value.text;
@@ -89,17 +87,25 @@ class _TagEditorState extends State<TagEditor> {
     textFocusNode.requestFocus();
   }
 
+  onTagsSaved() {
+    setState(() {
+      tags.addAll(addedTags);
+      addedTags.clear();
+      removedTags.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Shortcuts(
       shortcuts: <ShortcutActivator, Intent>{
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
             SaveTagsIntent(),
         const SingleActivator(LogicalKeyboardKey.goBack): BackIntent()
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
-          SaveTagsIntent: SaveTagsAction(),
+          SaveTagsIntent: SaveTagsAction(widget.image, tags, onTagsSaved),
           BackIntent: BackAction(context)
         },
         child: Focus(

@@ -1,11 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:quick_tagger/data/file_tag_info.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as futils;
 
-parseTags(String path, String tagFileContents) {
+TagFile parseTags(String path, String tagFileContents) {
   TagSeparator? separator;
   TagSpaceCharacter? spaceCharacter;
 
@@ -40,7 +40,7 @@ parseTags(String path, String tagFileContents) {
   return TagFile(path, tags, separator ?? TagSeparator.lineBreak, spaceCharacter ?? TagSpaceCharacter.space);
 }
 
-readTagsFromFile(path) async {
+Future<TagFile> readTagsFromFile(path) async {
   final file = File(path);
 
   final contents = await file.readAsString();
@@ -48,7 +48,7 @@ readTagsFromFile(path) async {
   return parseTags(path, contents);
 }
 
-readTagsFromFileSync(path) {
+TagFile readTagsFromFileSync(path) {
   final file = File(path);
 
   final contents = file.readAsStringSync();
@@ -56,34 +56,54 @@ readTagsFromFileSync(path) {
   return parseTags(path, contents);
 }
 
-getTagsForFile(path) async {
+Future<FileTagInfo> getTagsForFile(path) async {
   final files = await futils.getTagFilesForImageFile(path);
 
   final tags = <String>{};
+  final tagFiles = <TagFile>[];
 
   for (final path in files) {
     final tagFile = await readTagsFromFile(path);
+    tagFiles.add(tagFile);
 
     for (final tag in tagFile.tags) {
       tags.add(tag);
     }
   }
 
-  return tags;
+  return FileTagInfo(tags, tagFiles);
 }
 
-getTagsForFileSync(path) {
+FileTagInfo getTagsForFileSync(path) {
   final files = futils.getTagFilesForImageFileSync(path);
 
   final tags = <String>{};
+  final tagFiles = <TagFile>[];
 
   for (final path in files) {
-    final fileTags = readTagsFromFileSync(path);
+    final tagFile = readTagsFromFileSync(path);
+    tagFiles.add(tagFile);
 
-    for (final tag in fileTags) {
+    for (final tag in tagFile.tags) {
       tags.add(tag);
     }
   }
 
-  return tags;
+  return FileTagInfo(tags, tagFiles);
+}
+
+Future<void> save(TagFile tagFile, List<String> tags) async {
+  final builder = StringBuffer();
+
+  for (var idx = 0; idx < tags.length; idx++) {
+    final tag = tags[idx];
+
+    builder.write(tagFile.spaceCharacter.format(tag));
+
+    if (idx < tags.length - 1) {
+      builder.write(tagFile.separator.value());
+    }
+  }
+
+  await File(tagFile.path).writeAsString(builder.toString());
 }

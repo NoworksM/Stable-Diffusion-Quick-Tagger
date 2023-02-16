@@ -94,9 +94,9 @@ class _HomePageState extends State<HomePage> {
     final newImages = List<TaggedImage>.empty(growable: true);
     await for (final file in Directory(path).list()) {
       if (futils.isSupportedFile(file.path)) {
-        final tags = await tagutils.getTagsForFile(file.path);
+        final fileTagInfo = await tagutils.getTagsForFile(file.path);
 
-        for (final tag in tags) {
+        for (final tag in fileTagInfo.tags) {
           final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag, orElse: () => TagCount(tag, 0));
 
           if (tagCount.count == 0) {
@@ -106,7 +106,7 @@ class _HomePageState extends State<HomePage> {
           tagCount.count++;
         }
 
-        newImages.add(TaggedImage(file.path, tags));
+        newImages.add(TaggedImage.file(file.path, fileTagInfo));
 
         _imageStreamController.add(newImages);
         _tagCountStreamController.add(tagCounts);

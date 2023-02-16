@@ -6,14 +6,14 @@ const _supportedExtensions = {'.jpg', '.jpeg', '.png'};
 
 isSupportedFile(path) => _supportedExtensions.contains(p.extension(path));
 
-getPossibleTagFilesForImageFile(path) {
+List<String> getPossibleTagFilesForImageFile(path) {
   return [
     '$path.txt',
     '${p.join(p.dirname(path), p.basenameWithoutExtension(path))}.txt'
   ];
 }
 
-getTagFilesForImageFile(path) async {
+Future<List<String>> getTagFilesForImageFile(path) async {
   final tagFiles = List<String>.empty(growable: true);
 
   for (final tagPath in getPossibleTagFilesForImageFile(path)) {
@@ -25,7 +25,7 @@ getTagFilesForImageFile(path) async {
   return tagFiles;
 }
 
-getTagFilesForImageFileSync(path) {
+List<String> getTagFilesForImageFileSync(path) {
   final tagFiles = List<String>.empty(growable: true);
 
   for (final tagPath in getPossibleTagFilesForImageFile(path)) {
