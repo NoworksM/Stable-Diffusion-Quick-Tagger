@@ -20,11 +20,9 @@ class TagEditor extends StatefulWidget {
 }
 
 class _TagEditorState extends State<TagEditor> {
-  final StreamController<List<TagCount>> _tagCountStreamController =
-      StreamController();
+  final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
   final TextEditingController _tagTextController = TextEditingController();
-  late final Stream<List<TagCount>> _tagCountStream =
-      _tagCountStreamController.stream.asBroadcastStream();
+  late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
   late FocusNode pageFocusNode;
   late FocusNode textFocusNode;
   late final List<String> tags;
@@ -54,8 +52,7 @@ class _TagEditorState extends State<TagEditor> {
   }
 
   /// Update tag counts in the UI
-  _updateTagCounts() =>
-      _tagCountStreamController.add(tags.map((t) => TagCount(t, 1)).toList());
+  _updateTagCounts() => _tagCountStreamController.add(tags.map((t) => TagCount(t, 1)).toList());
 
   onTagSubmitted(String tag) {
     final tag = _tagTextController.value.text;
@@ -99,15 +96,12 @@ class _TagEditorState extends State<TagEditor> {
   Widget build(BuildContext context) {
     return Shortcuts(
       shortcuts: <ShortcutActivator, Intent>{
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true):
-            SaveTagsIntent(),
-        const SingleActivator(LogicalKeyboardKey.goBack): BackIntent()
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true): SaveTagsIntent(),
+        const SingleActivator(LogicalKeyboardKey.goBack): BackIntent(),
+        const SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true): BackIntent(),
       },
       child: Actions(
-        actions: <Type, Action<Intent>>{
-          SaveTagsIntent: SaveTagsAction(widget.image, tags, onTagsSaved),
-          BackIntent: BackAction(context)
-        },
+        actions: <Type, Action<Intent>>{SaveTagsIntent: SaveTagsAction(widget.image, tags, onTagsSaved), BackIntent: BackAction(context)},
         child: Focus(
           autofocus: true,
           focusNode: pageFocusNode,
