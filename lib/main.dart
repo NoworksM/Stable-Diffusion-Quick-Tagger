@@ -10,9 +10,8 @@ import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/pages/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
+import 'package:quick_tagger/services/gallery_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
-import 'package:quick_tagger/utils/file_utils.dart' as futils;
-import 'package:quick_tagger/utils/tag_utils.dart' as tagutils;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -79,7 +78,7 @@ class _HomePageState extends State<HomePage> {
   TagSpaceCharacter tagSpaceCharacter = TagSpaceCharacter.space;
   String? folder;
   bool autoSaveTags = true;
-  List<TaggedImage> images = List.empty();
+  List<TaggedImage> _images = List.empty();
   final StreamController<List<TaggedImage>> _imageStreamController = StreamController();
   late final Stream<List<TaggedImage>> _imageStream = _imageStreamController.stream.asBroadcastStream();
   final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
@@ -87,7 +86,7 @@ class _HomePageState extends State<HomePage> {
   String? hoveredTag;
   Set<String> includedTags = Set<String>.identity();
   Set<String> excludedTags = Set<String>.identity();
-  late final ITagService _tagService;
+  late final IGalleryService _galleryService;
   late final SharedPreferences _preferences;
 
   onPathChanged(path, {bool savePath = true}) async {
@@ -101,41 +100,13 @@ class _HomePageState extends State<HomePage> {
       await _preferences.setString(KeyLastPath, path);
     }
 
-    final tags = <String>{};
-    final tagCounts = List<TagCount>.empty(growable: true);
-
-    final newImages = List<TaggedImage>.empty(growable: true);
-    await for (final file in Directory(path).list()) {
-      if (futils.isSupportedFile(file.path)) {
-        final fileTagInfo = await tagutils.getTagsForFile(file.path);
-
-        for (final tag in fileTagInfo.tags) {
-          tags.add(tag);
-          final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag, orElse: () => TagCount(tag, 0));
-
-          if (tagCount.count == 0) {
-            tagCounts.add(tagCount);
-          }
-
-          tagCount.count++;
-        }
-
-        newImages.add(TaggedImage.file(file.path, fileTagInfo));
-
-        _imageStreamController.add(newImages);
-        _tagCountStreamController.add(tagCounts);
-      }
-    }
-
-    _tagService.replaceTags(tags.toList(growable: false));
-
-    setState(() {images = newImages;});
+    await _galleryService.loadImages(path);
   }
 
   List<TaggedImage> get filteredImages {
     final filteredImages = List<TaggedImage>.empty(growable: true);
 
-    for (final image in images) {
+    for (final image in _images) {
       final set = image.tags.toSet();
 
       bool hasExcluded = false;
@@ -234,7 +205,16 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _tagService = getIt.get<ITagService>();
+    _galleryService = getIt.get<IGalleryService>();
+
+    _galleryService.galleryStream.listen((images) {
+      setState(() {
+        _images = images;
+        _imageStreamController.add(filteredImages);
+        _tagCountStreamController.add(filteredTagCounts);
+      });
+    });
+
     getIt.getAsync<SharedPreferences>().then((p) {
       _preferences = p;
 
