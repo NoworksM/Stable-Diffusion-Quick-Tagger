@@ -1,6 +1,7 @@
 import 'package:injectable/injectable.dart';
-import 'package:quick_tagger/services/gallery_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @module
 abstract class AppModule {
+  Future<SharedPreferences> get prefs => SharedPreferences.getInstance();
 }

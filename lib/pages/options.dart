@@ -35,46 +35,39 @@ class Options extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      Flexible(
-        child: Row(
-          children: [
-            Flexible(
-              child: TextFormField(
-                enabled: false,
-                initialValue: folder,
-                decoration: const InputDecoration(labelText: 'Path'),
-              ),
+      Row(
+        children: [
+          Flexible(
+            child: TextFormField(
+              enabled: false,
+              initialValue: folder,
+              decoration: const InputDecoration(labelText: 'Path'),
             ),
-            Flexible(
-              child: ElevatedButton(
-                onPressed: selectFolder,
-                child: const Text('Select Folder'),
-              ),
+          ),
+          Flexible(
+            child: ElevatedButton(
+              onPressed: selectFolder,
+              child: const Text('Select Folder'),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      Flexible(
-        child: CheckboxListTile(
-          value: autoSaveTags,
-          onChanged: (v) => onAutoSaveTagsChanged?.call(v),
-        ),
+      CheckboxListTile(
+        value: autoSaveTags,
+        onChanged: (v) => onAutoSaveTagsChanged?.call(v),
       ),
-      Flexible(
-        child: DropdownButtonFormField<TagSeparator>(
-          decoration: const InputDecoration(labelText: 'Tagfile Format'),
-          value: tagSeparator,
-          onChanged: (t) => onTagSeparatorChanged?.call(t),
-          items: TagSeparator.values
-              .map((t) => DropdownMenuItem<TagSeparator>(
-            value: t,
-            child: Text(t.userFriendly()),
-          ))
-              .toList(),
-        ),
+      DropdownButtonFormField<TagSeparator>(
+        decoration: const InputDecoration(labelText: 'Tagfile Format'),
+        value: tagSeparator,
+        onChanged: (t) => onTagSeparatorChanged?.call(t),
+        items: TagSeparator.values
+            .map((t) => DropdownMenuItem<TagSeparator>(
+                  value: t,
+                  child: Text(t.userFriendly()),
+                ))
+            .toList(),
       ),
-      Flexible(
-          child: DropdownButtonFormField<TagSpaceCharacter>(
+      DropdownButtonFormField<TagSpaceCharacter>(
         decoration: const InputDecoration(labelText: 'Tagfile Format'),
         value: tagSpaceCharacter,
         onChanged: (t) => onTagSpaceCharacterChanged?.call(t),
@@ -84,7 +77,7 @@ class Options extends StatelessWidget {
                   child: Text(t.userFriendly()),
                 ))
             .toList(),
-      ))
+      ),
     ]);
   }
 }

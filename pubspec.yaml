@@ -45,6 +45,7 @@ dependencies:
   test: ^1.22.0
   get_it: ^7.2.0
   injectable: ^2.1.0
+  shared_preferences: ^2.0.18
 
 dev_dependencies:
   flutter_test:

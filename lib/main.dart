@@ -13,11 +13,14 @@ import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as futils;
 import 'package:quick_tagger/utils/tag_utils.dart' as tagutils;
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   configureDependencies();
   runApp(const MyApp());
 }
+
+const KeyLastPath = "gallery.last_path";
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -85,13 +88,18 @@ class _HomePageState extends State<HomePage> {
   Set<String> includedTags = Set<String>.identity();
   Set<String> excludedTags = Set<String>.identity();
   late final ITagService _tagService;
+  late final SharedPreferences _preferences;
 
-  onPathChanged(path) async {
+  onPathChanged(path, {bool savePath = true}) async {
     setState(() {
       folder = path;
       includedTags.clear();
       excludedTags.clear();
     });
+
+    if (savePath) {
+      await _preferences.setString(KeyLastPath, path);
+    }
 
     final tags = <String>{};
     final tagCounts = List<TagCount>.empty(growable: true);
@@ -227,6 +235,13 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _tagService = getIt.get<ITagService>();
+    getIt.getAsync<SharedPreferences>().then((p) {
+      _preferences = p;
+
+      if (_preferences.containsKey(KeyLastPath)) {
+        onPathChanged(_preferences.getString(KeyLastPath));
+      }
+    });
   }
 
   @override
