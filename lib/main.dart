@@ -7,12 +7,15 @@ import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/pages/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
+import 'package:quick_tagger/services/tag_service.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as futils;
 import 'package:quick_tagger/utils/tag_utils.dart' as tagutils;
 
 void main() {
+  configureDependencies();
   runApp(const MyApp());
 }
 
@@ -81,6 +84,7 @@ class _HomePageState extends State<HomePage> {
   String? hoveredTag;
   Set<String> includedTags = Set<String>.identity();
   Set<String> excludedTags = Set<String>.identity();
+  late final ITagService _tagService;
 
   onPathChanged(path) async {
     setState(() {
@@ -89,6 +93,7 @@ class _HomePageState extends State<HomePage> {
       excludedTags.clear();
     });
 
+    final tags = <String>{};
     final tagCounts = List<TagCount>.empty(growable: true);
 
     final newImages = List<TaggedImage>.empty(growable: true);
@@ -97,6 +102,7 @@ class _HomePageState extends State<HomePage> {
         final fileTagInfo = await tagutils.getTagsForFile(file.path);
 
         for (final tag in fileTagInfo.tags) {
+          tags.add(tag);
           final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag, orElse: () => TagCount(tag, 0));
 
           if (tagCount.count == 0) {
@@ -112,6 +118,8 @@ class _HomePageState extends State<HomePage> {
         _tagCountStreamController.add(tagCounts);
       }
     }
+
+    _tagService.replaceTags(tags.toList(growable: false));
 
     setState(() {images = newImages;});
   }
@@ -212,6 +220,13 @@ class _HomePageState extends State<HomePage> {
       _imageStreamController.add(filteredImages);
       _tagCountStreamController.add(filteredTagCounts);
     });
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    _tagService = getIt.get<ITagService>();
   }
 
   @override

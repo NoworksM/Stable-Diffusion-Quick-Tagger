@@ -9,6 +9,8 @@ import 'package:quick_tagger/actions/save_tags.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/ioc.dart';
+import 'package:quick_tagger/services/tag_service.dart';
 
 class TagEditor extends StatefulWidget {
   final TaggedImage image;
@@ -21,13 +23,14 @@ class TagEditor extends StatefulWidget {
 
 class _TagEditorState extends State<TagEditor> {
   final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
-  final TextEditingController _tagTextController = TextEditingController();
+  late TextEditingController _tagTextController;
   late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
   late FocusNode pageFocusNode;
-  late FocusNode textFocusNode;
+  late FocusNode _textFocusNode;
   late final List<String> tags;
   final List<String> addedTags = List.empty(growable: true);
   final List<String> removedTags = List.empty(growable: true);
+  late final ITagService _tagService;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
@@ -35,8 +38,9 @@ class _TagEditorState extends State<TagEditor> {
   void initState() {
     super.initState();
 
+    _tagService = getIt.get<ITagService>();
+
     pageFocusNode = FocusNode();
-    textFocusNode = FocusNode();
 
     tags = List.from(widget.image.tags, growable: true);
 
@@ -46,7 +50,7 @@ class _TagEditorState extends State<TagEditor> {
   @override
   void dispose() {
     pageFocusNode.dispose();
-    textFocusNode.dispose();
+    _textFocusNode.dispose();
 
     super.dispose();
   }
@@ -81,7 +85,37 @@ class _TagEditorState extends State<TagEditor> {
       _updateTagCounts();
     });
 
-    textFocusNode.requestFocus();
+    _textFocusNode.requestFocus();
+  }
+
+  onTagSelected(String tag) {
+    final tag = _tagTextController.value.text;
+
+    _tagTextController.clear();
+
+    setState(() {
+      if (tags.contains(tag)) {
+        tags.remove(tag);
+
+        if (addedTags.contains(tag)) {
+          addedTags.remove(tag);
+        } else {
+          removedTags.add(tag);
+        }
+      } else {
+        tags.add(tag);
+
+        if (removedTags.contains(tag)) {
+          removedTags.remove(tag);
+        } else {
+          addedTags.add(tag);
+        }
+      }
+
+      _updateTagCounts();
+    });
+
+    _textFocusNode.requestFocus();
   }
 
   onTagsSaved() {
@@ -116,6 +150,23 @@ class _TagEditorState extends State<TagEditor> {
             },
             child: Column(
               children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Autocomplete<String>(
+                    fieldViewBuilder: (context, fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
+                      _tagTextController = fieldTextEditingController;
+                      _textFocusNode = fieldFocusNode;
+
+                      return TextField(
+                        focusNode: _textFocusNode,
+                        controller: _tagTextController,
+                        onSubmitted: onTagSubmitted,
+                      );
+                    },
+                    optionsBuilder: (v) => _tagService.suggestedTags(v.text),
+                    onSelected: onTagSelected,
+                  ),
+                ),
                 Expanded(
                   child: Row(
                     children: [
@@ -136,14 +187,6 @@ class _TagEditorState extends State<TagEditor> {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    focusNode: textFocusNode,
-                    controller: _tagTextController,
-                    onSubmitted: onTagSubmitted,
-                  ),
-                )
               ],
             ),
           ),
