@@ -277,9 +277,15 @@ class _HomePageState extends State<HomePage> {
             ),
             Expanded(flex: 6, child: Padding(
               padding: const EdgeInsets.only(left: 8.0),
-              child: Gallery(
-                stream: _imageStream,
-                hoveredTag: hoveredTag,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Gallery(
+                      stream: _imageStream,
+                      hoveredTag: hoveredTag,
+                    ),
+                  ),
+                ],
               ),
             )),
             Flexible(flex: 2,

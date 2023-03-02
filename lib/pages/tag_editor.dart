@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quick_tagger/actions/back.dart';
 import 'package:quick_tagger/actions/save_tags.dart';
+import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
@@ -23,15 +24,12 @@ class TagEditor extends StatefulWidget {
 
 class _TagEditorState extends State<TagEditor> {
   final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
-  late TextEditingController _tagTextController;
   late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
-  late FocusNode pageFocusNode;
+  late FocusNode _pageFocusNode;
   late FocusNode _textFocusNode;
   late final List<String> tags;
   final List<String> addedTags = List.empty(growable: true);
   final List<String> removedTags = List.empty(growable: true);
-  late final ITagService _tagService;
-  bool _hasSuggestions = false;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
@@ -39,9 +37,7 @@ class _TagEditorState extends State<TagEditor> {
   void initState() {
     super.initState();
 
-    _tagService = getIt.get<ITagService>();
-
-    pageFocusNode = FocusNode();
+    _pageFocusNode = FocusNode();
 
     tags = List.from(widget.image.tags, growable: true);
 
@@ -50,8 +46,7 @@ class _TagEditorState extends State<TagEditor> {
 
   @override
   void dispose() {
-    pageFocusNode.dispose();
-    _textFocusNode.dispose();
+    _pageFocusNode.dispose();
 
     super.dispose();
   }
@@ -60,8 +55,6 @@ class _TagEditorState extends State<TagEditor> {
   _updateTagCounts() => _tagCountStreamController.add(tags.map((t) => TagCount(t, 1)).toList());
 
   onTagSubmitted(String tag) {
-    _tagTextController.clear();
-
     setState(() {
       if (tags.contains(tag)) {
         tags.remove(tag);
@@ -88,8 +81,6 @@ class _TagEditorState extends State<TagEditor> {
   }
 
   onTagSelected(String tag) {
-    _tagTextController.clear();
-
     setState(() {
       if (tags.contains(tag)) {
         tags.remove(tag);
@@ -135,9 +126,9 @@ class _TagEditorState extends State<TagEditor> {
         actions: <Type, Action<Intent>>{SaveTagsIntent: SaveTagsAction(widget.image, tags, onTagsSaved), BackIntent: BackAction(context)},
         child: Focus(
           autofocus: true,
-          focusNode: pageFocusNode,
+          focusNode: _pageFocusNode,
           onFocusChange: (hasFocus) {
-            if (!hasFocus) pageFocusNode.requestFocus();
+            if (!hasFocus) _pageFocusNode.requestFocus();
           },
           child: Listener(
             onPointerUp: (e) {
@@ -149,31 +140,9 @@ class _TagEditorState extends State<TagEditor> {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Autocomplete<String>(
-                    fieldViewBuilder: (context, fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
-                      _tagTextController = fieldTextEditingController;
-                      _textFocusNode = fieldFocusNode;
-
-                      return TextField(
-                        focusNode: _textFocusNode,
-                        controller: _tagTextController,
-                        onSubmitted: (s) {
-                          if (_hasSuggestions) {
-                            onFieldSubmitted();
-                          } else {
-                            onTagSubmitted(s);
-                          }
-                        },
-                      );
-                    },
-                    optionsBuilder: (v) {
-                      final suggested = _tagService.suggestedTags(v.text).toList(growable: false);
-
-                      _hasSuggestions = suggested.isNotEmpty;
-
-                      return suggested;
-                    },
-                    onSelected: onTagSubmitted,
+                  child: TagAutocomplete(
+                    onTagSelected: onTagSelected,
+                    onFocusNodeUpdated: (n) => _textFocusNode = n,
                   ),
                 ),
                 Expanded(
