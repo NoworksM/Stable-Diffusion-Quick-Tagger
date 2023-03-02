@@ -31,6 +31,7 @@ class _TagEditorState extends State<TagEditor> {
   final List<String> addedTags = List.empty(growable: true);
   final List<String> removedTags = List.empty(growable: true);
   late final ITagService _tagService;
+  bool _hasSuggestions = false;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
@@ -59,8 +60,6 @@ class _TagEditorState extends State<TagEditor> {
   _updateTagCounts() => _tagCountStreamController.add(tags.map((t) => TagCount(t, 1)).toList());
 
   onTagSubmitted(String tag) {
-    final tag = _tagTextController.value.text;
-
     _tagTextController.clear();
 
     setState(() {
@@ -89,8 +88,6 @@ class _TagEditorState extends State<TagEditor> {
   }
 
   onTagSelected(String tag) {
-    final tag = _tagTextController.value.text;
-
     _tagTextController.clear();
 
     setState(() {
@@ -160,11 +157,23 @@ class _TagEditorState extends State<TagEditor> {
                       return TextField(
                         focusNode: _textFocusNode,
                         controller: _tagTextController,
-                        onSubmitted: onTagSubmitted,
+                        onSubmitted: (s) {
+                          if (_hasSuggestions) {
+                            onFieldSubmitted();
+                          } else {
+                            onTagSubmitted(s);
+                          }
+                        },
                       );
                     },
-                    optionsBuilder: (v) => _tagService.suggestedTags(v.text),
-                    onSelected: onTagSelected,
+                    optionsBuilder: (v) {
+                      final suggested = _tagService.suggestedTags(v.text).toList(growable: false);
+
+                      _hasSuggestions = suggested.isNotEmpty;
+
+                      return suggested;
+                    },
+                    onSelected: onTagSubmitted,
                   ),
                 ),
                 Expanded(
