@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:quick_tagger/data/tag_count.dart';
 
 class TagSidebarItem extends StatefulWidget {
-  final TagCount tagCount;
+  final String tag;
+  final int? count;
   final bool selectable;
   final Function(String)? onInclude;
   final Function(String)? onExclude;
   final Function(String?)? onHover;
 
-  const TagSidebarItem({super.key, required this.tagCount, this.selectable = true, this.onInclude, this.onExclude, this.onHover});
+  const TagSidebarItem({super.key, required this.tag, this.count, this.selectable = true, this.onInclude, this.onExclude, this.onHover});
   
 
   @override
@@ -29,15 +29,15 @@ class _TagSidebarItemState extends State<TagSidebarItem> {
         : null;
 
     return GestureDetector(
-      onTap: () { if (widget.selectable) widget.onInclude?.call(widget.tagCount.tag); },
-      onTertiaryTapUp: (e) { if (widget.selectable) widget.onExclude?.call(widget.tagCount.tag); },
+      onTap: () { if (widget.selectable) widget.onInclude?.call(widget.tag); },
+      onTertiaryTapUp: (e) { if (widget.selectable) widget.onExclude?.call(widget.tag); },
       child: MouseRegion(
         onEnter: (e) {
           if (widget.selectable) {
             setState(() {
               isHovered = true;
             });
-            widget.onHover?.call(widget.tagCount.tag);
+            widget.onHover?.call(widget.tag);
           }
         },
         onExit: (e) {
@@ -52,7 +52,9 @@ class _TagSidebarItemState extends State<TagSidebarItem> {
           duration: const Duration(milliseconds: 250),
           curve: Curves.fastOutSlowIn,
           decoration: BoxDecoration(color: bgColor),
-          child: Text('${widget.tagCount.tag} (${widget.tagCount.count})', style: textStyle),
+          child: widget.count != null
+            ? Text('${widget.tag} (${widget.count})', style: textStyle)
+            : Text(widget.tag, style: textStyle),
         ),
       ),
     );
@@ -61,10 +63,11 @@ class _TagSidebarItemState extends State<TagSidebarItem> {
 
 class TagSelectedSidebarItem extends StatelessWidget {
   final String tag;
+  final int? count;
   final bool included;
   final Function(String)? onSelected;
 
-  const TagSelectedSidebarItem({super.key, required this.tag, required this.included, this.onSelected});
+  const TagSelectedSidebarItem({super.key, required this.tag, required this.included, this.count, this.onSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +76,9 @@ class TagSelectedSidebarItem extends StatelessWidget {
     return GestureDetector(
         onTap: () => onSelected?.call(tag),
         onTertiaryTapUp: (e) => onSelected?.call(tag),
-        child: Text(tag, style: TextStyle(color: color))
+        child: count != null
+            ? Text('$tag ($count)', style: TextStyle(color: color))
+            : Text(tag, style: TextStyle(color: color))
     );
   }
 }

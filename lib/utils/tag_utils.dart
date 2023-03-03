@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -71,7 +72,7 @@ Future<FileTagInfo> getTagsForFile(path) async {
     }
   }
 
-  return FileTagInfo(tags, tagFiles);
+  return FileTagInfo(HashSet<String>.from(tags), tagFiles);
 }
 
 FileTagInfo getTagsForFileSync(path) {
@@ -89,7 +90,7 @@ FileTagInfo getTagsForFileSync(path) {
     }
   }
 
-  return FileTagInfo(tags, tagFiles);
+  return FileTagInfo(HashSet<String>.from(tags), tagFiles);
 }
 
 Future<void> save(TagFile tagFile, List<String> tags) async {

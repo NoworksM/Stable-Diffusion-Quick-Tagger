@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -12,6 +13,7 @@ import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/components/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
+import 'package:quick_tagger/utils/functional_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -19,7 +21,7 @@ void main() {
   runApp(const MyApp());
 }
 
-const KeyLastPath = "gallery.last_path";
+const prefLastPath = "gallery.last_path";
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -80,9 +82,9 @@ class _HomePageState extends State<HomePage> {
   final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
   late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
   String? hoveredTag;
-  Set<String> includedTags = Set<String>.identity();
-  Set<String> excludedTags = Set<String>.identity();
-  final Map<String, Set<Edit>> pendingEdits = {};
+  HashSet<String> includedTags = HashSet<String>.identity();
+  HashSet<String> excludedTags = HashSet<String>.identity();
+  final HashMap<String, HashSet<Edit>> pendingEdits = HashMap<String, HashSet<Edit>>();
   late final IGalleryService _galleryService;
   late final SharedPreferences _preferences;
 
@@ -94,7 +96,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (savePath) {
-      await _preferences.setString(KeyLastPath, path);
+      await _preferences.setString(prefLastPath, path);
     }
 
     await _galleryService.loadImages(path);
@@ -204,14 +206,14 @@ class _HomePageState extends State<HomePage> {
     int hasCount = 0;
 
     for (final image in editingImages) {
-      if (image.tags.contains(tag)) {
+      if (image.tags.contains(tag) || (pendingEdits[image.path]?.contains(Edit(tag, EditType.add)) ?? false)) {
         hasCount++;
       }
     }
 
     EditType editType;
 
-    if (hasCount != editingImages.length) {
+    if (hasCount != editingImages.length && hasCount != 0) {
       final add = await showDialog<bool>(context: context, builder: _buildMixedTagEditDialog(tag, hasCount, editingImages.length));
 
       if (add == null) {
@@ -225,15 +227,26 @@ class _HomePageState extends State<HomePage> {
       editType = EditType.remove;
     }
 
-    for (final image in editingImages) {
-      bool hasTag = image.tags.contains(tag);
-      if (hasTag && editType == EditType.remove) {
-        final edits = pendingEdits.putIfAbsent(image.path, () => {});
+    setState(() {
+      for (final image in editingImages) {
+        bool hasTag = image.tags.contains(tag);
+        bool hasEdit = pendingEdits[image.path]?.contains(Edit(tag, editType)) ?? false;
+        bool hasInvertedEdit = pendingEdits[image.path]?.contains(Edit(tag, editType.invert())) ?? false;
 
-        edits.add(Edit(tag, editType));
-        edits.remove(Edit(tag, editType.invert()));
+        if (hasEdit) {
+          continue;
+        }
+
+        if (hasInvertedEdit) {
+          pendingEdits[image.path]!.remove(Edit(tag, editType.invert()));
+        } else if (hasTag && editType == EditType.remove || !hasTag && editType == EditType.add) {
+          final edits = pendingEdits.putIfAbsent(image.path, () => HashSet<Edit>());
+
+          edits.add(Edit(tag, editType));
+          edits.remove(Edit(tag, editType.invert()));
+        }
       }
-    }
+    });
 
     return true;
   }
@@ -247,10 +260,7 @@ class _HomePageState extends State<HomePage> {
             Text('The selected $total images do not uniformly contain or lack the tag "$tag".'),
             Text('$hasCount images have are tagged with "$tag"'),
             Text('${total - hasCount} images are not tagged with "$tag"'),
-            Container(
-              margin: const EdgeInsetsDirectional.only(top: 8.0),
-                child: Text('Would you like to add or remove "$tag" to the selected $total images?')
-            )
+            Container(margin: const EdgeInsetsDirectional.only(top: 8.0), child: Text('Would you like to add or remove "$tag" to the selected $total images?'))
           ])),
           actions: [
             ElevatedButton(
@@ -285,8 +295,8 @@ class _HomePageState extends State<HomePage> {
     getIt.getAsync<SharedPreferences>().then((p) {
       _preferences = p;
 
-      if (_preferences.containsKey(KeyLastPath)) {
-        onPathChanged(_preferences.getString(KeyLastPath));
+      if (_preferences.containsKey(prefLastPath)) {
+        onPathChanged(_preferences.getString(prefLastPath));
       }
     });
   }
@@ -375,8 +385,10 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.all(8.0),
                   child: TagSidebar(
                     stream: _tagCountStream,
+                    imageCount: filteredImages.length,
                     includedTags: includedTags.toList(),
                     excludedTags: excludedTags.toList(),
+                    pendingEdits: pendingEdits.values.flatten().toList(growable: false),
                     onTagHover: (t) => setState(() {
                       hoveredTag = t;
                     }),

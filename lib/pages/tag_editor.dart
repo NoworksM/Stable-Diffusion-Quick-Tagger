@@ -10,8 +10,6 @@ import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
-import 'package:quick_tagger/ioc.dart';
-import 'package:quick_tagger/services/tag_service.dart';
 
 class TagEditor extends StatefulWidget {
   final TaggedImage image;
@@ -160,6 +158,8 @@ class _TagEditorState extends State<TagEditor> {
                           flex: 2,
                           child: TagSidebar(
                             stream: _tagCountStream,
+                            pendingEdits: const [],
+                            imageCount: 1,
                             excludedTags: removedTags,
                             includedTags: addedTags,
                           ))

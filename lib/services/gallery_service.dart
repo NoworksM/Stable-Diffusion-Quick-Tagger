@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:injectable/injectable.dart';
@@ -27,7 +28,7 @@ class GalleryService implements IGalleryService {
 
   @override
   Future<void> loadImages(String path) async {
-    final tags = <String>{};
+    final tags = HashSet<String>();
     final tagCounts = List<TagCount>.empty(growable: true);
 
     final newImages = List<TaggedImage>.empty(growable: true);
@@ -69,7 +70,7 @@ class GalleryService implements IGalleryService {
       return;
     }
 
-    _images[index] = TaggedImage(image.path, tags.toSet(), image.tagFiles);
+    _images[index] = TaggedImage(image.path, HashSet<String>.from(tags), image.tagFiles);
 
     _imageStreamController.add(_images);
   }

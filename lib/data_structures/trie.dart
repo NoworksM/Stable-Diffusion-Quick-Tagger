@@ -111,6 +111,7 @@ class Trie {
   }
 
   /// Undo radix compaction on this trie and all it's children
+  // ignore: unused_element
   _radixDecompress({bool recurse = false}) {
     if (recurse) {
       for (final child in _children) {

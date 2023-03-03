@@ -9,6 +9,11 @@ class Edit {
 
   @override
   int get hashCode => type.hashCode ^ value.hashCode;
+
+  @override
+  String toString() {
+    return 'Edit{type: $type, value: $value}';
+  }
 }
 
 enum EditType {

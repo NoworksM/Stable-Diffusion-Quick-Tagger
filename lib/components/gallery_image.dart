@@ -33,7 +33,7 @@ class _GalleryImageState extends State<GalleryImage> {
         ),
         Column(
           children: [
-            const Expanded(child: Spacer()),
+            const Spacer(),
             Container(
               color: Theme.of(context).dialogBackgroundColor.withAlpha(200),
               padding: const EdgeInsets.all(4.0),

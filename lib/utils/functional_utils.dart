@@ -1,6 +1,3 @@
-
-import 'dart:collection';
-
 typedef Grouper<K, V> = K Function(V value);
 
 // extension FunctionalIteration<V> on Iterable<V> {
@@ -26,4 +23,12 @@ class Grouping<TKey, TItem> {
   final List<TItem> items;
 
   Grouping(this.key, this.items);
+}
+
+extension IterableExtensions<T> on Iterable<Iterable<T>> {
+  Iterable<T> flatten() sync* {
+    for (final iterable in this) {
+      yield* iterable;
+    }
+  }
 }
