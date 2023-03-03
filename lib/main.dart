@@ -1,17 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
+import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
-import 'package:quick_tagger/pages/gallery.dart';
+import 'package:quick_tagger/components/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
-import 'package:quick_tagger/services/tag_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -29,11 +29,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Quick Tagger',
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate
-      ],
+      localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -86,6 +82,7 @@ class _HomePageState extends State<HomePage> {
   String? hoveredTag;
   Set<String> includedTags = Set<String>.identity();
   Set<String> excludedTags = Set<String>.identity();
+  final Map<String, Set<Edit>> pendingEdits = {};
   late final IGalleryService _galleryService;
   late final SharedPreferences _preferences;
 
@@ -159,8 +156,7 @@ class _HomePageState extends State<HomePage> {
           continue;
         }
 
-        final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag,
-            orElse: () => TagCount(tag, 0));
+        final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag, orElse: () => TagCount(tag, 0));
 
         if (tagCount.count == 0) {
           tagCounts.add(tagCount);
@@ -201,6 +197,77 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  /// Callback for when a tag is added or removed from the selected images
+  FutureOr<bool> _onTagSelected(String tag) async {
+    final editingImages = filteredImages;
+
+    int hasCount = 0;
+
+    for (final image in editingImages) {
+      if (image.tags.contains(tag)) {
+        hasCount++;
+      }
+    }
+
+    EditType editType;
+
+    if (hasCount != editingImages.length) {
+      final add = await showDialog<bool>(context: context, builder: _buildMixedTagEditDialog(tag, hasCount, editingImages.length));
+
+      if (add == null) {
+        return false;
+      }
+
+      editType = add ? EditType.add : EditType.remove;
+    } else if (hasCount == 0) {
+      editType = EditType.add;
+    } else {
+      editType = EditType.remove;
+    }
+
+    for (final image in editingImages) {
+      bool hasTag = image.tags.contains(tag);
+      if (hasTag && editType == EditType.remove) {
+        final edits = pendingEdits.putIfAbsent(image.path, () => {});
+
+        edits.add(Edit(tag, editType));
+        edits.remove(Edit(tag, editType.invert()));
+      }
+    }
+
+    return true;
+  }
+
+  _buildMixedTagEditDialog(String tag, int hasCount, int total) {
+    return (BuildContext context) {
+      return AlertDialog(
+          title: const Text('Mixed Tags'),
+          content: SingleChildScrollView(
+              child: ListBody(children: [
+            Text('The selected $total images do not uniformly contain or lack the tag "$tag".'),
+            Text('$hasCount images have are tagged with "$tag"'),
+            Text('${total - hasCount} images are not tagged with "$tag"'),
+            Container(
+              margin: const EdgeInsetsDirectional.only(top: 8.0),
+                child: Text('Would you like to add or remove "$tag" to the selected $total images?')
+            )
+          ])),
+          actions: [
+            ElevatedButton(
+              child: const Text('Add'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+            ElevatedButton(
+              child: const Text('Remove'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          ]);
+    };
+  }
 
   @override
   void initState() {
@@ -269,37 +336,54 @@ class _HomePageState extends State<HomePage> {
                   autoSaveTags: autoSaveTags,
                   folder: folder,
                   onFolderChanged: onPathChanged,
-                  onTagSeparatorChanged: (val) => setState(() {tagSeparator = val ?? tagSeparator;}),
-                  onTagSpaceCharacterChanged: (val) => setState(() {tagSpaceCharacter = val ?? tagSpaceCharacter;}),
-                  onAutoSaveTagsChanged: (val) => setState(() {autoSaveTags = val ?? autoSaveTags;}),
+                  onTagSeparatorChanged: (val) => setState(() {
+                    tagSeparator = val ?? tagSeparator;
+                  }),
+                  onTagSpaceCharacterChanged: (val) => setState(() {
+                    tagSpaceCharacter = val ?? tagSpaceCharacter;
+                  }),
+                  onAutoSaveTagsChanged: (val) => setState(() {
+                    autoSaveTags = val ?? autoSaveTags;
+                  }),
                 ),
               ),
             ),
-            Expanded(flex: 6, child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Gallery(
-                      stream: _imageStream,
-                      hoveredTag: hoveredTag,
-                    ),
-                  ),
-                ],
-              ),
-            )),
-            Flexible(flex: 2,
+            Expanded(
+                flex: 6,
                 child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TagSidebar(
-                stream: _tagCountStream,
-                includedTags: includedTags.toList(),
-                excludedTags: excludedTags.toList(),
-                onTagHover: (t) => setState(() {hoveredTag = t;}),
-                onIncludedTagSelected: _onIncludedTagSelected,
-                onExcludedTagSelected: _onExcludedTagSelected,
-                ),
-            ))
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Column(
+                    children: [
+                      Container(
+                        margin: const EdgeInsetsDirectional.symmetric(vertical: 8.0),
+                        child: TagAutocomplete(
+                          onTagSelected: _onTagSelected,
+                        ),
+                      ),
+                      Expanded(
+                        child: Gallery(
+                          stream: _imageStream,
+                          hoveredTag: hoveredTag,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+            Flexible(
+                flex: 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TagSidebar(
+                    stream: _tagCountStream,
+                    includedTags: includedTags.toList(),
+                    excludedTags: excludedTags.toList(),
+                    onTagHover: (t) => setState(() {
+                      hoveredTag = t;
+                    }),
+                    onIncludedTagSelected: _onIncludedTagSelected,
+                    onExcludedTagSelected: _onExcludedTagSelected,
+                  ),
+                ))
           ],
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.

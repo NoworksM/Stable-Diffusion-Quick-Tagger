@@ -80,7 +80,7 @@ class _TagEditorState extends State<TagEditor> {
     _textFocusNode.requestFocus();
   }
 
-  onTagSelected(String tag) {
+  FutureOr<bool> onTagSelected(String tag) {
     setState(() {
       if (tags.contains(tag)) {
         tags.remove(tag);
@@ -104,6 +104,7 @@ class _TagEditorState extends State<TagEditor> {
     });
 
     _textFocusNode.requestFocus();
+    return true;
   }
 
   onTagsSaved() {

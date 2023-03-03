@@ -1,9 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 
 class TagAutocomplete extends StatefulWidget {
-  final Function(String)? onTagSelected;
+  final FutureOr<bool> Function(String)? onTagSelected;
   final Function(FocusNode)? onFocusNodeUpdated;
 
   const TagAutocomplete({super.key, this.onTagSelected, this.onFocusNodeUpdated});
@@ -20,12 +22,15 @@ class _TagAutocompleteState extends State<TagAutocomplete> {
   _TagAutocompleteState()
     : _tagService = getIt.get<ITagService>();
 
-  _onTagSelected(String tag) {
+  _onTagSelected(String tag) async {
     final trimmed = tag.trim();
 
     if (trimmed.isNotEmpty) {
-      widget.onTagSelected?.call(trimmed);
-      _tagTextController.clear();
+      final result = await widget.onTagSelected?.call(trimmed);
+
+      if (result ?? false) {
+        _tagTextController.clear();
+      }
     }
   }
 
