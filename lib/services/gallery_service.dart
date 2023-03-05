@@ -136,6 +136,8 @@ class GalleryService implements IGalleryService {
       }
     }
 
+    _imageStreamController.add(_images);
+
     return unsaved;
   }
 }

@@ -88,6 +88,7 @@ class _HomePageState extends State<HomePage> {
   final HashMap<String, HashSet<Edit>> pendingEdits = HashMap<String, HashSet<Edit>>();
   late final IGalleryService _galleryService;
   late final SharedPreferences _preferences;
+  late final FocusNode _pageFocusNode;
 
   onPathChanged(path, {bool savePath = true}) async {
     setState(() {
@@ -440,6 +441,8 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _galleryService = getIt.get<IGalleryService>();
 
+    _pageFocusNode = FocusNode();
+
     _galleryService.galleryStream.listen((images) {
       setState(() {
         _images = images;
@@ -458,6 +461,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+
+    _pageFocusNode.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
@@ -469,96 +479,103 @@ class _HomePageState extends State<HomePage> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true): _saveChanges
       },
-      child: Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-        ),
-        body: Center(
-          // Center is a layout widget. It takes a single child and positions it
-          // in the middle of the parent.
-          child: Row(
-            // Column is also a layout widget. It takes a list of children and
-            // arranges them vertically. By default, it sizes itself to fit its
-            // children horizontally, and tries to be as tall as its parent.
-            //
-            // Invoke "debug painting" (press "p" in the console, choose the
-            // "Toggle Debug Paint" action from the Flutter Inspector in Android
-            // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-            // to see the wireframe for each widget.
-            //
-            // Column has various properties to control how it sizes itself and
-            // how it positions its children. Here we use mainAxisAlignment to
-            // center the children vertically; the main axis here is the vertical
-            // axis because Columns are vertical (the cross axis would be
-            // horizontal).
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Flexible(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Options(
-                    tagSeparator: tagSeparator,
-                    tagSpaceCharacter: tagSpaceCharacter,
-                    autoSaveTags: autoSaveTags,
-                    folder: folder,
-                    onFolderChanged: onPathChanged,
-                    onTagSeparatorChanged: (val) => setState(() {
-                      tagSeparator = val ?? tagSeparator;
-                    }),
-                    onTagSpaceCharacterChanged: (val) => setState(() {
-                      tagSpaceCharacter = val ?? tagSpaceCharacter;
-                    }),
-                    onAutoSaveTagsChanged: (val) => setState(() {
-                      autoSaveTags = val ?? autoSaveTags;
-                    }),
-                  ),
-                ),
-              ),
-              Expanded(
-                  flex: 6,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: Column(
-                      children: [
-                        Container(
-                          margin: const EdgeInsetsDirectional.symmetric(vertical: 8.0),
-                          child: TagAutocomplete(
-                            onTagSelected: _onTagSelected,
-                          ),
-                        ),
-                        Expanded(
-                          child: Gallery(
-                            stream: _imageStream,
-                            hoveredTag: hoveredTag,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
-              Flexible(
+      child: Focus(
+        autofocus: true,
+        focusNode: _pageFocusNode,
+        onFocusChange: (hasFocus) {
+          if (!hasFocus) _pageFocusNode.requestFocus();
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            // Here we take the value from the MyHomePage object that was created by
+            // the App.build method, and use it to set our appbar title.
+            title: Text(widget.title),
+          ),
+          body: Center(
+            // Center is a layout widget. It takes a single child and positions it
+            // in the middle of the parent.
+            child: Row(
+              // Column is also a layout widget. It takes a list of children and
+              // arranges them vertically. By default, it sizes itself to fit its
+              // children horizontally, and tries to be as tall as its parent.
+              //
+              // Invoke "debug painting" (press "p" in the console, choose the
+              // "Toggle Debug Paint" action from the Flutter Inspector in Android
+              // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+              // to see the wireframe for each widget.
+              //
+              // Column has various properties to control how it sizes itself and
+              // how it positions its children. Here we use mainAxisAlignment to
+              // center the children vertically; the main axis here is the vertical
+              // axis because Columns are vertical (the cross axis would be
+              // horizontal).
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Flexible(
                   flex: 2,
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: TagSidebar(
-                      stream: _tagCountStream,
-                      imageCount: filteredImages.length,
-                      includedTags: includedTags.toList(),
-                      excludedTags: excludedTags.toList(),
-                      pendingEdits: pendingEdits.values.flatten().toList(growable: false),
-                      onTagHover: (t) => setState(() {
-                        hoveredTag = t;
+                    child: Options(
+                      tagSeparator: tagSeparator,
+                      tagSpaceCharacter: tagSpaceCharacter,
+                      autoSaveTags: autoSaveTags,
+                      folder: folder,
+                      onFolderChanged: onPathChanged,
+                      onTagSeparatorChanged: (val) => setState(() {
+                        tagSeparator = val ?? tagSeparator;
                       }),
-                      onIncludedTagSelected: _onIncludedTagSelected,
-                      onExcludedTagSelected: _onExcludedTagSelected,
+                      onTagSpaceCharacterChanged: (val) => setState(() {
+                        tagSpaceCharacter = val ?? tagSpaceCharacter;
+                      }),
+                      onAutoSaveTagsChanged: (val) => setState(() {
+                        autoSaveTags = val ?? autoSaveTags;
+                      }),
                     ),
-                  ))
-            ],
-          ),
-        ), // This trailing comma makes auto-formatting nicer for build methods.
+                  ),
+                ),
+                Expanded(
+                    flex: 6,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Column(
+                        children: [
+                          Container(
+                            margin: const EdgeInsetsDirectional.symmetric(vertical: 8.0),
+                            child: TagAutocomplete(
+                              onTagSelected: _onTagSelected,
+                            ),
+                          ),
+                          Expanded(
+                            child: Gallery(
+                              stream: _imageStream,
+                              hoveredTag: hoveredTag,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                Flexible(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TagSidebar(
+                        stream: _tagCountStream,
+                        imageCount: filteredImages.length,
+                        includedTags: includedTags.toList(),
+                        excludedTags: excludedTags.toList(),
+                        pendingEdits: pendingEdits.values.flatten().toList(growable: false),
+                        onTagHover: (t) => setState(() {
+                          hoveredTag = t;
+                        }),
+                        onIncludedTagSelected: _onIncludedTagSelected,
+                        onExcludedTagSelected: _onExcludedTagSelected,
+                      ),
+                    ))
+              ],
+            ),
+          ), // This trailing comma makes auto-formatting nicer for build methods.
+        ),
       ),
     );
   }
