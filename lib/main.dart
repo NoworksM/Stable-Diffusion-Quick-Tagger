@@ -22,7 +22,7 @@ void main() {
   runApp(const MyApp());
 }
 
-const prefLastPath = "gallery.last_path";
+const prefLastPath = 'gallery.last_path';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -425,8 +425,14 @@ class _HomePageState extends State<HomePage> {
     };
   }
 
-  _saveChanges() {
+  _saveChanges() async {
+    final results = await _galleryService.saveAllChanges(pendingEdits);
 
+    setState(() {
+      pendingEdits.clear();
+
+      pendingEdits.addEntries(results.entries);
+    });
   }
 
   @override

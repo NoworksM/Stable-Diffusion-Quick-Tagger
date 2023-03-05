@@ -93,11 +93,12 @@ FileTagInfo getTagsForFileSync(path) {
   return FileTagInfo(HashSet<String>.from(tags), tagFiles);
 }
 
-Future<void> save(TagFile tagFile, List<String> tags) async {
+Future<void> save(TagFile tagFile, Iterable<String> tags) async {
+  final enumerated = tags.toList(growable: false);
   final builder = StringBuffer();
 
-  for (var idx = 0; idx < tags.length; idx++) {
-    final tag = tags[idx];
+  for (var idx = 0; idx < enumerated.length; idx++) {
+    final tag = enumerated[idx];
 
     builder.write(tagFile.spaceCharacter.format(tag));
 
