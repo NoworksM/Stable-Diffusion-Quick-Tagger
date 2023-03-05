@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -71,7 +72,7 @@ Future<FileTagInfo> getTagsForFile(path) async {
     }
   }
 
-  return FileTagInfo(tags, tagFiles);
+  return FileTagInfo(HashSet<String>.from(tags), tagFiles);
 }
 
 FileTagInfo getTagsForFileSync(path) {
@@ -89,14 +90,15 @@ FileTagInfo getTagsForFileSync(path) {
     }
   }
 
-  return FileTagInfo(tags, tagFiles);
+  return FileTagInfo(HashSet<String>.from(tags), tagFiles);
 }
 
-Future<void> save(TagFile tagFile, List<String> tags) async {
+Future<void> save(TagFile tagFile, Iterable<String> tags) async {
+  final enumerated = tags.toList(growable: false);
   final builder = StringBuffer();
 
-  for (var idx = 0; idx < tags.length; idx++) {
-    final tag = tags[idx];
+  for (var idx = 0; idx < enumerated.length; idx++) {
+    final tag = enumerated[idx];
 
     builder.write(tagFile.spaceCharacter.format(tag));
 

@@ -3,7 +3,7 @@ class Trie {
   String _value;
   List<Trie> _children;
 
-  Trie(List<String> words, {bool radix = false}) : this.fromWords("", words, radix: radix);
+  Trie(List<String> words, {bool radix = false}) : this.fromWords('', words, radix: radix);
 
   _radixCompress() {
     if (_children.length == 1) {
@@ -61,7 +61,7 @@ class Trie {
 
   /// Create an empty/root Trie
   Trie.empty({this.radix = false})
-    : _value = "",
+    : _value = '',
       _children = <Trie>[];
 
   /// Create a Trie from entries/children for the new node
@@ -81,7 +81,7 @@ class Trie {
 
   get value => _value;
   
-  Iterable<String> findSuggestions(String term, {String previous = ""}) sync* {
+  Iterable<String> findSuggestions(String term, {String previous = ''}) sync* {
     if (term.isEmpty) {
       yield* buildTerms(previous.substring(0, previous.length - 1));
       return;
@@ -111,6 +111,7 @@ class Trie {
   }
 
   /// Undo radix compaction on this trie and all it's children
+  // ignore: unused_element
   _radixDecompress({bool recurse = false}) {
     if (recurse) {
       for (final child in _children) {

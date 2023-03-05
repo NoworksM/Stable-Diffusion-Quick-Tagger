@@ -1,0 +1,1 @@
+enum TagSort { count, alphabetical }

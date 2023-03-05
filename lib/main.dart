@@ -1,17 +1,20 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
+import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
-import 'package:quick_tagger/pages/gallery.dart';
+import 'package:quick_tagger/components/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
-import 'package:quick_tagger/services/tag_service.dart';
+import 'package:quick_tagger/utils/functional_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -19,7 +22,7 @@ void main() {
   runApp(const MyApp());
 }
 
-const KeyLastPath = "gallery.last_path";
+const prefLastPath = 'gallery.last_path';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -29,11 +32,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Quick Tagger',
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate
-      ],
+      localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -84,10 +83,12 @@ class _HomePageState extends State<HomePage> {
   final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
   late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
   String? hoveredTag;
-  Set<String> includedTags = Set<String>.identity();
-  Set<String> excludedTags = Set<String>.identity();
+  HashSet<String> includedTags = HashSet<String>.identity();
+  HashSet<String> excludedTags = HashSet<String>.identity();
+  final HashMap<String, HashSet<Edit>> pendingEdits = HashMap<String, HashSet<Edit>>();
   late final IGalleryService _galleryService;
   late final SharedPreferences _preferences;
+  late final FocusNode _pageFocusNode;
 
   onPathChanged(path, {bool savePath = true}) async {
     setState(() {
@@ -97,7 +98,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (savePath) {
-      await _preferences.setString(KeyLastPath, path);
+      await _preferences.setString(prefLastPath, path);
     }
 
     await _galleryService.loadImages(path);
@@ -159,8 +160,7 @@ class _HomePageState extends State<HomePage> {
           continue;
         }
 
-        final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag,
-            orElse: () => TagCount(tag, 0));
+        final tagCount = tagCounts.firstWhere((tc) => tc.tag == tag, orElse: () => TagCount(tag, 0));
 
         if (tagCount.count == 0) {
           tagCounts.add(tagCount);
@@ -201,11 +201,247 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  /// Callback for when a tag is added or removed from the selected images
+  FutureOr<bool> _onTagSelected(String tag) async {
+    final editingImages = filteredImages;
+
+    int hasCount = 0;
+    int addedCount = 0;
+    int removedCount = 0;
+    bool anyWithoutTag = false;
+    bool anyWithTag = false;
+    bool anyHasAdded = false;
+    bool anyHasRemoved = false;
+
+    for (final image in editingImages) {
+      final hasTag = image.tags.contains(tag);
+      final hasAdded = pendingEdits[image.path]?.contains(Edit(tag, EditType.add)) ?? false;
+      final hasRemoved = pendingEdits[image.path]?.contains(Edit(tag, EditType.remove)) ?? false;
+
+      if (hasAdded) {
+        anyHasAdded = true;
+        addedCount++;
+      }
+
+      if (hasRemoved) {
+        anyHasRemoved = true;
+        removedCount++;
+      }
+
+      if (hasTag) {
+        hasCount++;
+      }
+
+      if ((hasTag || hasAdded) && !hasRemoved) {
+        anyWithTag = true;
+      }
+      if ((!hasTag || hasRemoved) && !hasAdded) {
+        anyWithoutTag = true;
+      }
+    }
+
+    EditType editType;
+
+    if (anyHasAdded || anyHasRemoved) {
+      if (anyHasAdded && anyHasRemoved) {
+        final add = await showDialog<bool>(context: context, builder: _buildMixedEditsDialogBuilder(tag, addedCount, removedCount));
+
+        if (add == null) {
+          return false;
+        }
+
+        setState(() {
+          for (final edits in pendingEdits.values) {
+            if (add) {
+              edits.remove(Edit(tag, EditType.add.invert()));
+            } else {
+              edits.remove(Edit(tag, EditType.remove.invert()));
+            }
+          }
+        });
+
+        return true;
+      } else if (anyHasAdded) {
+        final removeOnly = await showDialog<bool>(context: context, builder: _buildPendingEditsDialogBuilder(tag, addedCount, hasCount, editingImages.length, true));
+
+        if (removeOnly == null) {
+          return false;
+        }
+
+        final existingEdit = Edit(tag, EditType.add);
+
+        setState(() {
+          for (final image in editingImages) {
+            final edits = pendingEdits.putIfAbsent(image.path, () => HashSet<Edit>());
+
+            edits.remove(existingEdit);
+
+            if (!removeOnly && image.tags.contains(tag)) {
+              edits.add(Edit(tag, EditType.remove));
+            }
+          }
+        });
+
+        return true;
+      } else {
+        final addOnly = await showDialog<bool>(context: context, builder: _buildPendingEditsDialogBuilder(tag, removedCount, hasCount, editingImages.length, false));
+
+        if (addOnly == null) {
+          return false;
+        }
+
+        final existingEdit = Edit(tag, EditType.remove);
+
+        setState(() {
+          for (final image in editingImages) {
+            final edits = pendingEdits.putIfAbsent(image.path, () => HashSet<Edit>());
+
+            edits.remove(existingEdit);
+
+            if (!addOnly && !image.tags.contains(tag)) {
+              edits.add(Edit(tag, EditType.add));
+            }
+          }
+        });
+
+        return true;
+      }
+    }
+
+    if (anyWithTag && anyWithoutTag) {
+      final add = await showDialog<bool>(context: context, builder: _buildMixedTagEditDialogBuilder(tag, hasCount + addedCount, editingImages.length));
+
+      if (add == null) {
+        return false;
+      }
+
+      editType = add ? EditType.add : EditType.remove;
+    } else if (!anyWithTag) {
+      editType = EditType.add;
+    } else {
+      editType = EditType.remove;
+    }
+
+    setState(() {
+      for (final image in editingImages) {
+        bool hasTag = image.tags.contains(tag);
+        bool hasEdit = pendingEdits[image.path]?.contains(Edit(tag, editType)) ?? false;
+        bool hasInvertedEdit = pendingEdits[image.path]?.contains(Edit(tag, editType.invert())) ?? false;
+
+        if (hasEdit) {
+          continue;
+        }
+
+        if (hasInvertedEdit) {
+          pendingEdits[image.path]!.remove(Edit(tag, editType.invert()));
+        } else if (hasTag && editType == EditType.remove || !hasTag && editType == EditType.add) {
+          final edits = pendingEdits.putIfAbsent(image.path, () => HashSet<Edit>());
+
+          edits.add(Edit(tag, editType));
+          edits.remove(Edit(tag, editType.invert()));
+        }
+      }
+    });
+
+    return true;
+  }
+
+  _buildMixedTagEditDialogBuilder(String tag, int hasCount, int total) {
+    return (BuildContext context) {
+      return AlertDialog(
+          title: const Text('Mixed Tags'),
+          content: SingleChildScrollView(
+              child: ListBody(children: [
+            Text('The selected $total images do not uniformly contain or lack the tag "$tag".'),
+            Text('$hasCount images are tagged with "$tag"'),
+            Text('${total - hasCount} images are not tagged with "$tag"'),
+            Container(margin: const EdgeInsetsDirectional.only(top: 8.0), child: Text('Would you like to add or remove "$tag" to the selected $total images?'))
+          ])),
+          actions: [
+            ElevatedButton(
+              child: const Text('Add'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+            ElevatedButton(
+              child: const Text('Remove'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          ]);
+    };
+  }
+
+  _buildMixedEditsDialogBuilder(String tag, int addedCount, int removedCount) {
+    return (BuildContext context) {
+      return AlertDialog(
+          title: const Text('Pending Edits'),
+          content: SingleChildScrollView(
+              child: ListBody(children: [
+                Text('The tag "$tag" is currently pending being added to $addedCount images and removed from $removedCount images'),
+                Container(margin: const EdgeInsetsDirectional.only(top: 8.0), child: Text('Would you like to remove "$tag" from the pending edits or add it to the pending removals?'))
+              ])),
+          actions: [
+            ElevatedButton(
+              child: const Text('Add'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+            ElevatedButton(
+              child: const Text('Remove'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          ]);
+    };
+  }
+
+  _buildPendingEditsDialogBuilder(String tag, int editCount, int existingCount, int total, bool adding) {
+    return (BuildContext context) {
+      return AlertDialog(
+          title: const Text('Pending Edits'),
+          content: SingleChildScrollView(
+              child: ListBody(children: [
+                Text('The tag "$tag" is currently pending being ${adding ? 'added to' : 'removed from'} $editCount images'),
+                Container(margin: const EdgeInsetsDirectional.only(top: 8.0), child: Text('Would you like to ${adding ? 'remove' : 'add'} "$tag" pending edits or to all $total images?'))
+              ])),
+          actions: [
+            ElevatedButton(
+              child: const Text('All'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text('Pending'),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+            ElevatedButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          ]);
+    };
+  }
+
+  _saveChanges() async {
+    final results = await _galleryService.saveAllChanges(pendingEdits);
+
+    setState(() {
+      pendingEdits.clear();
+
+      pendingEdits.addEntries(results.entries);
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     _galleryService = getIt.get<IGalleryService>();
+
+    _pageFocusNode = FocusNode();
 
     _galleryService.galleryStream.listen((images) {
       setState(() {
@@ -218,10 +454,17 @@ class _HomePageState extends State<HomePage> {
     getIt.getAsync<SharedPreferences>().then((p) {
       _preferences = p;
 
-      if (_preferences.containsKey(KeyLastPath)) {
-        onPathChanged(_preferences.getString(KeyLastPath));
+      if (_preferences.containsKey(prefLastPath)) {
+        onPathChanged(_preferences.getString(prefLastPath));
       }
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    _pageFocusNode.dispose();
   }
 
   @override
@@ -232,71 +475,108 @@ class _HomePageState extends State<HomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Row(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Flexible(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Options(
-                  tagSeparator: tagSeparator,
-                  tagSpaceCharacter: tagSpaceCharacter,
-                  autoSaveTags: autoSaveTags,
-                  folder: folder,
-                  onFolderChanged: onPathChanged,
-                  onTagSeparatorChanged: (val) => setState(() {tagSeparator = val ?? tagSeparator;}),
-                  onTagSpaceCharacterChanged: (val) => setState(() {tagSpaceCharacter = val ?? tagSpaceCharacter;}),
-                  onAutoSaveTagsChanged: (val) => setState(() {autoSaveTags = val ?? autoSaveTags;}),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyS, control: true): _saveChanges
+      },
+      child: Focus(
+        autofocus: true,
+        focusNode: _pageFocusNode,
+        onFocusChange: (hasFocus) {
+          if (!hasFocus) _pageFocusNode.requestFocus();
+        },
+        child: Scaffold(
+          appBar: AppBar(
+            // Here we take the value from the MyHomePage object that was created by
+            // the App.build method, and use it to set our appbar title.
+            title: Text(widget.title),
+          ),
+          body: Center(
+            // Center is a layout widget. It takes a single child and positions it
+            // in the middle of the parent.
+            child: Row(
+              // Column is also a layout widget. It takes a list of children and
+              // arranges them vertically. By default, it sizes itself to fit its
+              // children horizontally, and tries to be as tall as its parent.
+              //
+              // Invoke "debug painting" (press "p" in the console, choose the
+              // "Toggle Debug Paint" action from the Flutter Inspector in Android
+              // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+              // to see the wireframe for each widget.
+              //
+              // Column has various properties to control how it sizes itself and
+              // how it positions its children. Here we use mainAxisAlignment to
+              // center the children vertically; the main axis here is the vertical
+              // axis because Columns are vertical (the cross axis would be
+              // horizontal).
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Flexible(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Options(
+                      tagSeparator: tagSeparator,
+                      tagSpaceCharacter: tagSpaceCharacter,
+                      autoSaveTags: autoSaveTags,
+                      folder: folder,
+                      onFolderChanged: onPathChanged,
+                      onTagSeparatorChanged: (val) => setState(() {
+                        tagSeparator = val ?? tagSeparator;
+                      }),
+                      onTagSpaceCharacterChanged: (val) => setState(() {
+                        tagSpaceCharacter = val ?? tagSpaceCharacter;
+                      }),
+                      onAutoSaveTagsChanged: (val) => setState(() {
+                        autoSaveTags = val ?? autoSaveTags;
+                      }),
+                    ),
+                  ),
                 ),
-              ),
+                Expanded(
+                    flex: 6,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Column(
+                        children: [
+                          Container(
+                            margin: const EdgeInsetsDirectional.symmetric(vertical: 8.0),
+                            child: TagAutocomplete(
+                              onTagSelected: _onTagSelected,
+                            ),
+                          ),
+                          Expanded(
+                            child: Gallery(
+                              stream: _imageStream,
+                              hoveredTag: hoveredTag,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                Flexible(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TagSidebar(
+                        stream: _tagCountStream,
+                        imageCount: filteredImages.length,
+                        includedTags: includedTags.toList(),
+                        excludedTags: excludedTags.toList(),
+                        pendingEdits: pendingEdits.values.flatten().toList(growable: false),
+                        onTagHover: (t) => setState(() {
+                          hoveredTag = t;
+                        }),
+                        onIncludedTagSelected: _onIncludedTagSelected,
+                        onExcludedTagSelected: _onExcludedTagSelected,
+                      ),
+                    ))
+              ],
             ),
-            Expanded(flex: 6, child: Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Gallery(
-                stream: _imageStream,
-                hoveredTag: hoveredTag,
-              ),
-            )),
-            Flexible(flex: 2,
-                child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TagSidebar(
-                stream: _tagCountStream,
-                includedTags: includedTags.toList(),
-                excludedTags: excludedTags.toList(),
-                onTagHover: (t) => setState(() {hoveredTag = t;}),
-                onIncludedTagSelected: _onIncludedTagSelected,
-                onExcludedTagSelected: _onExcludedTagSelected,
-                ),
-            ))
-          ],
+          ), // This trailing comma makes auto-formatting nicer for build methods.
         ),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
 }
