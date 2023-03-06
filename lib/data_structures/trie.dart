@@ -17,52 +17,57 @@ class Trie {
   }
 
   /// Create a Trie from a list of words
-  Trie.fromWords(this._value, List<String> words, {this.radix = false})
-    : _children = <Trie>[] {
+  Trie.fromWords(this._value, List<String> words, {this.radix = false, bool sorted = false}) : _children = <Trie>[] {
     if (words.isEmpty) {
       return;
     }
 
-    words.sort();
+    if (!sorted) {
+      words.sort();
+    }
 
-    var lastChar = words[0][0];
+    String lastChar;
+    if (words[0].isEmpty) {
+      lastChar = '';
+    } else {
+      lastChar = words[0][0];
+    }
     var subWords = <String>[];
 
-    if (words.length == 1 && words[0].length == 1) {
-      _children.add(Trie.fromEntries(words[0], []));
-    } else {
-      for (var idx = 0; idx < words.length; idx++) {
-        if (lastChar == words[idx][0]) {
-          if (words[idx].length > 1) {
-            subWords.add(words[idx].substring(1));
-          }
-        } else {
-          _children.add(Trie.fromWords(lastChar, subWords, radix: radix));
-          subWords.clear();
-
-          if (words[idx].length > 1) {
-            subWords.add(words[idx].substring(1));
-          }
-
-          lastChar = words[idx][0];
+    for (var idx = 0; idx < words.length; idx++) {
+      if (words[idx].isEmpty) {
+        continue;
+      }
+      if (lastChar == words[idx][0]) {
+        if (words[idx].isNotEmpty) {
+          subWords.add(words[idx].substring(1));
         }
-      }
-
-      if (subWords.isNotEmpty) {
-        _children.add(Trie.fromWords(lastChar, subWords, radix: radix));
+      } else {
+        _children.add(Trie.fromWords(lastChar, subWords, radix: radix, sorted: true));
         subWords.clear();
-      }
 
-      if (radix) {
-        _radixCompress();
+        if (words[idx].isNotEmpty) {
+          subWords.add(words[idx].substring(1));
+        }
+
+        lastChar = words[idx][0];
       }
+    }
+
+    if (subWords.isNotEmpty) {
+      _children.add(Trie.fromWords(lastChar, subWords, radix: radix, sorted: true));
+      subWords.clear();
+    }
+
+    if (radix) {
+      _radixCompress();
     }
   }
 
   /// Create an empty/root Trie
   Trie.empty({this.radix = false})
-    : _value = '',
-      _children = <Trie>[];
+      : _value = '',
+        _children = <Trie>[];
 
   /// Create a Trie from entries/children for the new node
   Trie.fromEntries(this._value, this._children, {this.radix = false});
@@ -80,7 +85,7 @@ class Trie {
   // }
 
   get value => _value;
-  
+
   Iterable<String> findSuggestions(String term, {String previous = ''}) sync* {
     if (term.isEmpty) {
       yield* buildTerms(previous.substring(0, previous.length - 1));
@@ -134,25 +139,25 @@ class Trie {
   }
 
   /// TODO: Finish implementing add and addAll
-  // add(String value) {
-  //   // Value already exists
-  //   if (value == _value) {
-  //     return;
-  //   }
-  //
-  //   if (_children.isEmpty) {
-  //       _children.add(Trie.single(value.substring(_value.length), radix));
-  //       return;
-  //   }
-  //
-  //   for (final child in _children) {
-  //
-  //   }
-  // }
-  //
-  // _add(String value, String previous)
-  //
-  // addAll(Iterable<String> values) {
-  //   throw UnimplementedError();
-  // }
+// add(String value) {
+//   // Value already exists
+//   if (value == _value) {
+//     return;
+//   }
+//
+//   if (_children.isEmpty) {
+//       _children.add(Trie.single(value.substring(_value.length), radix));
+//       return;
+//   }
+//
+//   for (final child in _children) {
+//
+//   }
+// }
+//
+// _add(String value, String previous)
+//
+// addAll(Iterable<String> values) {
+//   throw UnimplementedError();
+// }
 }
