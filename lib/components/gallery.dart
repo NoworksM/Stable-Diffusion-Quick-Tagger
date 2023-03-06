@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:quick_tagger/components/gallery_image.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 
-
 class Gallery extends StatelessWidget {
   final Stream<List<TaggedImage>> stream;
   final String? hoveredTag;
+  final Set<String>? selectedImages;
+  final Function(TaggedImage)? onImageSelected;
 
-  const Gallery({super.key, required this.stream, this.hoveredTag});
+  const Gallery({super.key, required this.stream, this.hoveredTag, this.selectedImages, this.onImageSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +28,11 @@ class Gallery extends StatelessWidget {
               mainAxisSpacing: 0,
             ),
             itemCount: images.length,
-            itemBuilder: (ctx, idx) =>
-                GalleryImage(image: images[idx], hoveredTag: hoveredTag),
+            itemBuilder: (ctx, idx) => GalleryImage(
+                image: images[idx],
+                hoveredTag: hoveredTag,
+                selected: selectedImages?.contains(images[idx].path) ?? false,
+                onSelected: () => onImageSelected?.call(images[idx])),
           );
         }
       },

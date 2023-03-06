@@ -104,6 +104,7 @@ class _HomePageState extends State<HomePage> {
   late final IGalleryService _galleryService;
   late final SharedPreferences _preferences;
   late final FocusNode _pageFocusNode;
+  final Set<String> _selectedImages = HashSet<String>();
 
   onPathChanged(path, {bool savePath = true}) async {
     setState(() {
@@ -562,11 +563,21 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         Expanded(
-                          child: Gallery(
-                            stream: _imageStream,
-                            hoveredTag: hoveredTag,
-                          ),
-                        ),
+                          child:Gallery(
+                stream: _imageStream,
+                hoveredTag: hoveredTag,
+                selectedImages: _selectedImages,
+                onImageSelected: (image) {
+                  setState(() {
+                    if (_selectedImages.contains(image.path)) {
+                      _selectedImages.remove(image.path);
+                    } else {
+                      _selectedImages.add(image.path);
+                    }
+                  });
+                }
+              ),
+            ),
                       ],
                     ),
                   )),

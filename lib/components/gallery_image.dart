@@ -1,14 +1,18 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/pages/tag_editor_page.dart';
+import 'package:quick_tagger/utils/collection_utils.dart';
 
 class GalleryImage extends StatefulWidget {
   final TaggedImage image;
   final String? hoveredTag;
+  final bool selected;
+  final Function()? onSelected;
 
-  const GalleryImage({super.key, required this.image, this.hoveredTag});
+  const GalleryImage({super.key, required this.image, this.hoveredTag, this.selected = false, this.onSelected});
 
   @override
   State<StatefulWidget> createState() => _GalleryImageState();
@@ -17,15 +21,24 @@ class GalleryImage extends StatefulWidget {
 class _GalleryImageState extends State<GalleryImage> {
   @override
   Widget build(BuildContext context) {
-    final decoration = widget.hoveredTag != null &&
-            widget.image.tags.contains(widget.hoveredTag)
-        ? BoxDecoration(
-            border: Border.all(
-                color: Theme.of(context).colorScheme.secondary, width: 6))
-        : null;
+    late final BoxDecoration? decoration;
+    if (widget.hoveredTag != null && widget.image.tags.contains(widget.hoveredTag)) {
+      decoration = BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.secondary, width: 6));
+    } else if (widget.selected) {
+      decoration = BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.primaryContainer, width: 4));
+    } else {
+      decoration = null;
+    }
 
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => TagEditorPage(image: widget.image))),
+      onTap: () {
+        if (widget.onSelected != null &&
+            HardwareKeyboard.instance.logicalKeysPressed.containsAny([LogicalKeyboardKey.shift, LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight])) {
+          widget.onSelected!.call();
+        } else {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => TagEditorPage(image: widget.image)));
+        }
+      },
       child: Stack(fit: StackFit.expand, children: [
         Image.file(
           File(widget.image.path),
