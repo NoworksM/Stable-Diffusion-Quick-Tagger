@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:quick_tagger/components/image_count_footer.dart';
 import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/edit.dart';
@@ -498,8 +499,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-
-
   @override
   void dispose() {
     super.dispose();
@@ -579,21 +578,29 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         Expanded(
-                          child:Gallery(
-                stream: _imageStream,
-                hoveredTag: hoveredTag,
-                selectedImages: _selectedImagePaths,
-                onImageSelected: (image) {
-                  setState(() {
-                    if (_selectedImagePaths.contains(image.path)) {
-                      _selectedImagePaths.remove(image.path);
-                    } else {
-                      _selectedImagePaths.add(image.path);
-                    }
-                  });
-                }
-              ),
-            ),
+                          child: Gallery(
+                              stream: _imageStream,
+                              hoveredTag: hoveredTag,
+                              selectedImages: _selectedImagePaths,
+                              onImageSelected: (image) {
+                                setState(() {
+                                  if (_selectedImagePaths.contains(image.path)) {
+                                    _selectedImagePaths.remove(image.path);
+                                  } else {
+                                    _selectedImagePaths.add(image.path);
+                                  }
+                                });
+                              }),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: ImageCountFooter(
+                            images: _images.length,
+                            filtered: filteredImages.length,
+                            selected: selectedImages.length,
+                            filteredTags: includedTags.length + excludedTags.length
+                          ),
+                        ),
                       ],
                     ),
                   )),
