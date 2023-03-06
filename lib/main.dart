@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,12 +15,26 @@ import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/components/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
+import 'package:quick_tagger/services/tag_service.dart';
 import 'package:quick_tagger/utils/functional_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   configureDependencies();
+
+  initTags();
+
   runApp(const MyApp());
+}
+
+void initTags() {
+  final lines = File('tags.txt').readAsLinesSync();
+
+  final tags = HashSet<String>.from(lines);
+
+  final tagService = getIt.get<ITagService>();
+
+  tagService.replaceTags(tags.toList(growable: false));
 }
 
 const prefLastPath = 'gallery.last_path';
