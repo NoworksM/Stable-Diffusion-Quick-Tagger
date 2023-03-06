@@ -2,8 +2,10 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/file_tag_info.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
+import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as futils;
 
 TagFile parseTags(String path, String tagFileContents) {
@@ -108,4 +110,56 @@ Future<void> save(TagFile tagFile, Iterable<String> tags) async {
   }
 
   await File(tagFile.path).writeAsString(builder.toString());
+}
+
+HashSet<String> buildEditedSetOfTagsForImage(TaggedImage image, HashSet<Edit> edits) {
+  final editedTags = HashSet<String>();
+
+  for (final tag in image.tags) {
+    if (!edits.contains(Edit(tag, EditType.remove))) {
+      editedTags.add(tag);
+    }
+  }
+
+  for (final edit in edits) {
+    if (edit.type == EditType.add) {
+      editedTags.add(edit.value);
+    }
+  }
+
+  return editedTags;
+}
+
+List<TaggedImage> filterImagesForTagsAndEdits(List<TaggedImage> images, HashMap<String, HashSet<Edit>> allEdits, Set<String> includedTags, Set<String> excludedTags) {
+  final filteredImages = List<TaggedImage>.empty(growable: true);
+
+  for (final image in images) {
+    final edits = allEdits[image.path];
+
+    late final HashSet<String> tags;
+    if (edits != null) {
+      tags = buildEditedSetOfTagsForImage(image, edits);
+    } else {
+      tags = image.tags;
+    }
+
+    bool hasExcluded = false;
+
+    for (final excluded in excludedTags) {
+      if (tags.contains(excluded)) {
+        hasExcluded = true;
+        break;
+      }
+    }
+
+    if (hasExcluded) {
+      continue;
+    }
+
+    if (tags.containsAll(includedTags)) {
+      filteredImages.add(image);
+    }
+  }
+
+  return filteredImages;
 }

@@ -18,6 +18,7 @@ import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 import 'package:quick_tagger/utils/functional_utils.dart';
+import 'package:quick_tagger/utils/tag_utils.dart' as tagUtils;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -121,32 +122,7 @@ class _HomePageState extends State<HomePage> {
     await _galleryService.loadImages(path);
   }
 
-  List<TaggedImage> get filteredImages {
-    final filteredImages = List<TaggedImage>.empty(growable: true);
-
-    for (final image in _images) {
-      final set = image.tags.toSet();
-
-      bool hasExcluded = false;
-
-      for (final excluded in excludedTags) {
-        if (set.contains(excluded)) {
-          hasExcluded = true;
-          break;
-        }
-      }
-
-      if (hasExcluded) {
-        continue;
-      }
-
-      if (set.containsAll(includedTags)) {
-        filteredImages.add(image);
-      }
-    }
-
-    return filteredImages;
-  }
+  List<TaggedImage> get filteredImages => tagUtils.filterImagesForTagsAndEdits(_images, pendingEdits, includedTags, excludedTags);
 
   List<TaggedImage> get selectedImages {
     if (_selectedImagePaths.isEmpty) {
@@ -376,6 +352,8 @@ class _HomePageState extends State<HomePage> {
           edits.remove(Edit(tag, editType.invert()));
         }
       }
+
+      _imageStreamController.add(filteredImages);
     });
 
     return true;
@@ -595,10 +573,10 @@ class _HomePageState extends State<HomePage> {
                         Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: ImageCountFooter(
-                            images: _images.length,
-                            filtered: filteredImages.length,
-                            selected: selectedImages.length,
-                            filteredTags: includedTags.length + excludedTags.length,
+                              images: _images.length,
+                              filtered: filteredImages.length,
+                              selected: selectedImages.length,
+                              filteredTags: includedTags.length + excludedTags.length,
                             onClearSelection: () => setState(() { _selectedImagePaths.clear(); }),
                           ),
                         ),
