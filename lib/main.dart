@@ -104,6 +104,7 @@ class _HomePageState extends State<HomePage> {
   late final IGalleryService _galleryService;
   late final SharedPreferences _preferences;
   late final FocusNode _pageFocusNode;
+  final Set<String> _selectedImagePaths = HashSet<String>();
 
   onPathChanged(path, {bool savePath = true}) async {
     setState(() {
@@ -144,6 +145,22 @@ class _HomePageState extends State<HomePage> {
     }
 
     return filteredImages;
+  }
+
+  List<TaggedImage> get selectedImages {
+    if (_selectedImagePaths.isEmpty) {
+      return filteredImages;
+    }
+
+    final images = List<TaggedImage>.empty(growable: true);
+
+    for (final image in filteredImages) {
+      if (_selectedImagePaths.contains(image.path)) {
+        images.add(image);
+      }
+    }
+
+    return images;
   }
 
   List<TagCount> get filteredTagCounts {
@@ -218,7 +235,7 @@ class _HomePageState extends State<HomePage> {
 
   /// Callback for when a tag is added or removed from the selected images
   FutureOr<bool> _onTagSelected(String tag) async {
-    final editingImages = filteredImages;
+    final editingImages = selectedImages;
 
     int hasCount = 0;
     int addedCount = 0;
@@ -562,11 +579,21 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         Expanded(
-                          child: Gallery(
-                            stream: _imageStream,
-                            hoveredTag: hoveredTag,
-                          ),
-                        ),
+                          child:Gallery(
+                stream: _imageStream,
+                hoveredTag: hoveredTag,
+                selectedImages: _selectedImagePaths,
+                onImageSelected: (image) {
+                  setState(() {
+                    if (_selectedImagePaths.contains(image.path)) {
+                      _selectedImagePaths.remove(image.path);
+                    } else {
+                      _selectedImagePaths.add(image.path);
+                    }
+                  });
+                }
+              ),
+            ),
                       ],
                     ),
                   )),
