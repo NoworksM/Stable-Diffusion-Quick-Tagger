@@ -598,7 +598,8 @@ class _HomePageState extends State<HomePage> {
                             images: _images.length,
                             filtered: filteredImages.length,
                             selected: selectedImages.length,
-                            filteredTags: includedTags.length + excludedTags.length
+                            filteredTags: includedTags.length + excludedTags.length,
+                            onClearSelection: () => setState(() { _selectedImagePaths.clear(); }),
                           ),
                         ),
                       ],
