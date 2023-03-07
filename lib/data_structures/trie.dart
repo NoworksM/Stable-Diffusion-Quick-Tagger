@@ -93,7 +93,11 @@ class Trie {
     }
 
     for (final child in _children) {
-      if (term.startsWith(child._value)) {
+      if (child._value.isEmpty) {
+        continue;
+      }
+
+      if (term.startsWith(child.d_value)) {
         final newTerm = term.substring(child._value.length);
         final newPrevious = previous + term.substring(0, child._value.length);
 
@@ -104,7 +108,7 @@ class Trie {
   }
 
   Iterable<String> buildTerms(String root) sync* {
-    if (_children.isEmpty) {
+    if (_value.isEmpty || _children.isEmpty) {
       yield root + _value;
     }
 

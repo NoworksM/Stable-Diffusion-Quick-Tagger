@@ -29,7 +29,7 @@ class TagService implements ITagService {
       return <String>[];
     }
 
-    return trie.findSuggestions(term).take(5);
+    return trie.findSuggestions(term).take(10);
   }
 
   @override
