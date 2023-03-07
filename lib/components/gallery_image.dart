@@ -25,7 +25,7 @@ class _GalleryImageState extends State<GalleryImage> {
     if (widget.hoveredTag != null && widget.image.tags.contains(widget.hoveredTag)) {
       decoration = BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.secondary, width: 6));
     } else if (widget.selected) {
-      decoration = BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.primaryContainer, width: 4));
+      decoration = BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.primaryContainer, width: 6));
     } else {
       decoration = null;
     }
@@ -49,12 +49,15 @@ class _GalleryImageState extends State<GalleryImage> {
             const Spacer(),
             Container(
               color: Theme.of(context).dialogBackgroundColor.withAlpha(200),
-              padding: const EdgeInsets.all(4.0),
+              padding: const EdgeInsets.all(8.0),
               child: Center(
                   child: Row(
                 children: [
                   const Icon(Icons.sell),
-                  Text('${widget.image.tags.length} Tags'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Text('${widget.image.tags.length} Tags'),
+                  ),
                 ],
               )),
             ),
