@@ -97,7 +97,7 @@ class Trie {
         continue;
       }
 
-      if (term.startsWith(child.d_value)) {
+      if (term.startsWith(child._value)) {
         final newTerm = term.substring(child._value.length);
         final newPrevious = previous + term.substring(0, child._value.length);
 
