@@ -553,6 +553,7 @@ class _HomePageState extends State<HomePage> {
                           child: TagAutocomplete(
                             onTagSelected: _onTagSelected,
                             suggestionSearch: _tagService.suggestedGlobalTags,
+                            hintText: 'Add or remove tags'
                           ),
                         ),
                         Expanded(

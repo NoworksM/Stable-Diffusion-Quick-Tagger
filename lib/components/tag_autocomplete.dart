@@ -6,8 +6,9 @@ class TagAutocomplete extends StatefulWidget {
   final FutureOr<bool> Function(String)? onTagSelected;
   final Function(FocusNode)? onFocusNodeUpdated;
   final Iterable<String> Function(String) suggestionSearch;
+  final String? hintText;
 
-  const TagAutocomplete({super.key, this.onTagSelected, this.onFocusNodeUpdated, required this.suggestionSearch});
+  const TagAutocomplete({super.key, this.onTagSelected, this.onFocusNodeUpdated, required this.suggestionSearch, this.hintText});
 
   @override
   State<StatefulWidget> createState() => _TagAutocompleteState();
@@ -38,6 +39,7 @@ class _TagAutocompleteState extends State<TagAutocomplete> {
         final field = TextField(
           focusNode: fieldFocusNode,
           controller: _tagTextController,
+          decoration: InputDecoration(hintText: widget.hintText),
           onSubmitted: (s) {
             if (_hasSuggestions) {
               onFieldSubmitted();

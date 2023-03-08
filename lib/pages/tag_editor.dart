@@ -145,6 +145,7 @@ class _TagEditorState extends State<TagEditor> {
                         onTagSelected: onTagSelected,
                         onFocusNodeUpdated: (n) => _textFocusNode = n,
                         suggestionSearch: _tagService.suggestedGlobalTags,
+                        hintText: 'Add or remove tags',
                       ),
                     ),
                     Flexible(
