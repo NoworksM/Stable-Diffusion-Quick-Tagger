@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:quick_tagger/components/tag_section_header.dart';

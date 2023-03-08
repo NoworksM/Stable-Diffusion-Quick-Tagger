@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:quick_tagger/ioc.dart';
-import 'package:quick_tagger/services/tag_service.dart';
 
 class TagAutocomplete extends StatefulWidget {
   final FutureOr<bool> Function(String)? onTagSelected;

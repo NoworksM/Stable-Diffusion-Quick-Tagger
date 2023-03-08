@@ -263,7 +263,7 @@ class _HomePageState extends State<HomePage> {
 
         for (final pair in pendingEdits.entries) {
           final path = pair.key;
-          final edit = pair.value;
+          // final edit = pair.value;
 
           if (add) {
             removed.add(MapEntry(path, Edit(tag, EditType.add.invert())));
@@ -324,6 +324,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (anyWithTag && anyWithoutTag) {
+      // ignore: use_build_context_synchronously
       final add = await showDialog<bool>(context: context, builder: _buildMixedTagEditDialogBuilder(tag, hasCount + addedCount, editingImages.length));
 
       if (add == null) {

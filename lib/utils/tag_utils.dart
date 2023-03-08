@@ -9,8 +9,7 @@ import 'package:quick_tagger/data/tag_grouped_counts.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
-import 'package:quick_tagger/utils/file_utils.dart' as futils;
-import 'package:quick_tagger/utils/tag_utils.dart';
+import 'package:quick_tagger/utils/file_utils.dart' as file_utils;
 
 TagFile parseTags(String path, String tagFileContents) {
   TagSeparator? separator;
@@ -64,7 +63,7 @@ TagFile readTagsFromFileSync(path) {
 }
 
 Future<FileTagInfo> getTagsForFile(path) async {
-  final files = await futils.getTagFilesForImageFile(path);
+  final files = await file_utils.getTagFilesForImageFile(path);
 
   final tags = <String>{};
   final tagFiles = <TagFile>[];
@@ -82,7 +81,7 @@ Future<FileTagInfo> getTagsForFile(path) async {
 }
 
 FileTagInfo getTagsForFileSync(path) {
-  final files = futils.getTagFilesForImageFileSync(path);
+  final files = file_utils.getTagFilesForImageFileSync(path);
 
   final tags = <String>{};
   final tagFiles = <TagFile>[];

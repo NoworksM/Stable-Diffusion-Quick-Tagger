@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
-import 'package:quick_tagger/utils/tag_utils.dart' as tutils;
 
 class SaveTagsAction extends Action<SaveTagsIntent> {
   final TaggedImage image;
