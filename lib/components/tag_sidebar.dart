@@ -14,8 +14,8 @@ class TagSidebar extends StatefulWidget {
   final Stream<List<TagCount>> tagsStream;
   final List<TagCount>? initialTags;
   final Function(String?)? onTagHover;
-  final List<String> includedTags;
-  final List<String> excludedTags;
+  final List<String>? includedTags;
+  final List<String>? excludedTags;
   final Stream<TagGroupedCounts> pendingEditCountsStream;
   final TagGroupedCounts? initialPendingEditCounts;
   final Function(String)? onIncludedTagSelected;
@@ -33,8 +33,8 @@ class TagSidebar extends StatefulWidget {
       this.searchable = true,
       this.onTagHover,
       required this.imageCount,
-      required this.includedTags,
-      required this.excludedTags,
+      this.includedTags,
+      this.excludedTags,
       this.initialPendingEditCounts,
       required this.pendingEditCountsStream,
       this.onIncludedTagSelected,
@@ -89,12 +89,12 @@ class _TagSidebarState extends State<TagSidebar> {
           }),
       AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
-          child: widget.includedTags.isNotEmpty || widget.excludedTags.isNotEmpty
+          child: (widget.includedTags?.isNotEmpty ?? false) || (widget.excludedTags?.isNotEmpty ?? false)
               ? TagSidebarSection(
                   title: 'Filtered',
                   sort: sort,
-                  positive: widget.includedTags.map((i) => TagCount(i, widget.imageCount)).toList(growable: false),
-                  negative: widget.excludedTags.map((e) => TagCount(e, widget.imageCount)).toList(growable: false),
+                  positive: widget.includedTags!.map((i) => TagCount(i, widget.imageCount)).toList(growable: false),
+                  negative: widget.excludedTags!.map((e) => TagCount(e, widget.imageCount)).toList(growable: false),
                   onPositiveSelected: widget.onIncludedTagSelected,
                   onNegativeSelected: widget.onExcludedTagSelected)
               : const SizedBox.shrink()),

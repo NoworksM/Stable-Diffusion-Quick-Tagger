@@ -8,6 +8,7 @@ import 'package:quick_tagger/actions/save_tags.dart';
 import 'package:quick_tagger/components/gallery_image.dart';
 import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
+import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
@@ -28,12 +29,8 @@ class TagEditor extends StatefulWidget {
 }
 
 class _TagEditorState extends State<TagEditor> {
-  final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
-  late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
   late FocusNode _pageFocusNode;
   late FocusNode _textFocusNode;
-  final List<String> addedTags = List.empty(growable: true);
-  final List<String> removedTags = List.empty(growable: true);
   late final ITagService _tagService;
   late final IGalleryService _galleryService;
   late final ScrollController _galleryController;
@@ -45,13 +42,10 @@ class _TagEditorState extends State<TagEditor> {
 
   TaggedImage get image => widget.images[index];
 
-  List<String> get tags => List.from(image.tags, growable: true);
-
   int get index => _index;
 
   set index(int value) {
     _index = value;
-    _updateTagCounts();
     if (initialized) {
       _scrollToCurrent();
     }
@@ -83,8 +77,6 @@ class _TagEditorState extends State<TagEditor> {
 
     _galleryController = ScrollController(initialScrollOffset: imagePosition);
 
-    _updateTagCounts();
-
     initialized = true;
   }
 
@@ -95,68 +87,34 @@ class _TagEditorState extends State<TagEditor> {
     super.dispose();
   }
 
-  /// Update tag counts in the UI
-  _updateTagCounts() => _tagCountStreamController.add(tags.map((t) => TagCount(t, 1)).toList());
-
   onTagSubmitted(String tag) {
-    setState(() {
-      if (tags.contains(tag)) {
-        tags.remove(tag);
+    final tags = _galleryService.getTagsForImage(image);
+    final pendingEdits = _galleryService.getPendingEditForImage(image);
 
-        if (addedTags.contains(tag)) {
-          addedTags.remove(tag);
-        } else {
-          removedTags.add(tag);
-        }
+    if (tags.contains(tag)) {
+      final edit = Edit(tag, EditType.remove);
+
+      if (pendingEdits.contains(edit)) {
+        _galleryService.dequeueEditForImage(image, edit);
       } else {
-        tags.add(tag);
-
-        if (removedTags.contains(tag)) {
-          removedTags.remove(tag);
-        } else {
-          addedTags.add(tag);
-        }
+        _galleryService.queueEditForImage(image, edit);
       }
+    } else {
+      final edit = Edit(tag, EditType.remove);
 
-      _updateTagCounts();
-    });
+      if (pendingEdits.contains(edit)) {
+        _galleryService.dequeueEditForImage(image, edit);
+      } else {
+        _galleryService.queueEditForImage(image, edit);
+      }
+    }
 
     _textFocusNode.requestFocus();
   }
 
   FutureOr<bool> onTagSelected(String tag) {
-    setState(() {
-      if (tags.contains(tag)) {
-        tags.remove(tag);
-
-        if (addedTags.contains(tag)) {
-          addedTags.remove(tag);
-        } else {
-          removedTags.add(tag);
-        }
-      } else {
-        tags.add(tag);
-
-        if (removedTags.contains(tag)) {
-          removedTags.remove(tag);
-        } else {
-          addedTags.add(tag);
-        }
-      }
-
-      _updateTagCounts();
-    });
-
-    _textFocusNode.requestFocus();
+    onTagSubmitted(tag);
     return true;
-  }
-
-  onTagsSaved() {
-    setState(() {
-      tags.addAll(addedTags);
-      addedTags.clear();
-      removedTags.clear();
-    });
   }
 
   @override
@@ -168,7 +126,7 @@ class _TagEditorState extends State<TagEditor> {
         const SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true): BackIntent(),
       },
       child: Actions(
-        actions: <Type, Action<Intent>>{SaveTagsIntent: SaveTagsAction(image, tags, onTagsSaved), BackIntent: BackAction(context)},
+        actions: <Type, Action<Intent>>{SaveTagsIntent: SaveTagsAction(image), BackIntent: BackAction(context)},
         child: Focus(
           autofocus: true,
           focusNode: _pageFocusNode,
@@ -226,8 +184,6 @@ class _TagEditorState extends State<TagEditor> {
                     initialPendingEditCounts: tag_utils.transformImageEditsToCounts(_galleryService.getPendingEditForImage(image)),
                     pendingEditCountsStream: _galleryService.getPendingEditStreamForImage(image).asyncMap((d) => tag_utils.transformImageEditsToCounts(d)),
                     imageCount: 1,
-                    excludedTags: removedTags,
-                    includedTags: addedTags,
                     image: image
                   ))
             ],

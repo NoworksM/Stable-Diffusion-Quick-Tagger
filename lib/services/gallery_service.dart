@@ -78,6 +78,9 @@ abstract class IGalleryService {
 
   /// Get stream of current tags for an image
   Stream<UnmodifiableSetView<String>> getTagStreamForImage(TaggedImage image);
+
+  /// Get current tags for an image
+  UnmodifiableSetView<String> getTagsForImage(TaggedImage image);
 }
 
 @Singleton(as: IGalleryService)
@@ -368,5 +371,16 @@ class GalleryService implements IGalleryService {
 
       _pendingEditsStreamController.add(pendingEdits);
     }
+  }
+
+  @override
+  UnmodifiableSetView<String> getTagsForImage(TaggedImage image) {
+    for (final i in _images) {
+      if (i.path == image.path) {
+        return UnmodifiableSetView(i.tags);
+      }
+    }
+
+    return UnmodifiableSetView(HashSet<String>());
   }
 }
