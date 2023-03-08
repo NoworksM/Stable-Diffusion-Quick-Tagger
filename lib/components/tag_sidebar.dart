@@ -103,8 +103,10 @@ class _TagSidebarState extends State<TagSidebar> {
           child: widget.searchable
               ? TextFormField(
                   onChanged: (v) => setState(() {
-                        _tagSearch = v;
-                      }))
+                    _tagSearch = v;
+                  }),
+                  decoration: const InputDecoration(hintText: 'Filter tags'),
+                )
               : const SizedBox.shrink()),
       Expanded(
         child: StreamBuilder<List<TagCount>>(
