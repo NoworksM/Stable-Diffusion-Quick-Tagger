@@ -70,7 +70,14 @@ abstract class IGalleryService {
   /// Save changes for multiple images based on filenames and a set of edits
   Future<HashMap<String, HashSet<Edit>>> saveAllChanges(HashMap<String, HashSet<Edit>> edits);
 
+  /// Save all pending changes
   Future<void> savePendingChanges();
+
+  /// Save pending changes for an image
+  Future<void> saveImagePendingChanges(TaggedImage image);
+
+  /// Get stream of current tags for an image
+  Stream<UnmodifiableSetView<String>> getTagStreamForImage(TaggedImage image);
 }
 
 @Singleton(as: IGalleryService)
@@ -86,7 +93,16 @@ class GalleryService implements IGalleryService {
   late final Stream<PendingEdits> _pendingEditsStream = _pendingEditsStreamController.stream.asBroadcastStream();
   final HashMap<String, Stream<PendingEdit>> _pendingImageEditsStreams = HashMap();
 
-  GalleryService(this._tagService);
+  final HashMap<String, StreamController<UnmodifiableSetView<String>>> _imageTagStreamControllers = HashMap();
+  final HashMap<String, Stream<UnmodifiableSetView<String>>> _imageTagStreams = HashMap();
+
+  GalleryService(this._tagService) {
+    _imageStream.transform(StreamTransformer.fromHandlers(handleData: (images, sink) {
+      for (final image in images) {
+        _imageTagStreamControllers[image.path]?.add(UnmodifiableSetView(image.tags));
+      }
+    }));
+  }
 
   @override
   Stream<PendingEdits> get pendingEditsStream => _pendingEditsStream;
@@ -336,5 +352,21 @@ class GalleryService implements IGalleryService {
     }
 
     _pendingEditsStreamController.add(pendingEdits);
+  }
+
+  @override
+  Stream<UnmodifiableSetView<String>> getTagStreamForImage(TaggedImage image) {
+    final controller = _imageTagStreamControllers.putIfAbsent(image.path, () => StreamController());
+    return _imageTagStreams.putIfAbsent(image.path, () => controller.stream.asBroadcastStream());
+  }
+
+  @override
+  Future<void> saveImagePendingChanges(TaggedImage image) async {
+    if (_pendingEdits.containsKey(image.path)) {
+      await saveChanges(image, _pendingEdits[image.path]!);
+      _pendingEdits.remove(image.path);
+
+      _pendingEditsStreamController.add(pendingEdits);
+    }
   }
 }

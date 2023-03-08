@@ -8,11 +8,11 @@ import 'package:quick_tagger/components/tag_sidebar_section.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tag_grouped_counts.dart';
 import 'package:quick_tagger/data/tag_sort.dart';
-import 'package:quick_tagger/services/gallery_service.dart';
-import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
+import 'package:quick_tagger/data/tagged_image.dart';
 
 class TagSidebar extends StatefulWidget {
-  final Stream<List<TagCount>> stream;
+  final Stream<List<TagCount>> tagsStream;
+  final List<TagCount>? initialTags;
   final Function(String?)? onTagHover;
   final List<String> includedTags;
   final List<String> excludedTags;
@@ -23,11 +23,12 @@ class TagSidebar extends StatefulWidget {
   final bool selectable;
   final int imageCount;
   final bool searchable;
-  final Key? pendingEditCountsKey;
+  final TaggedImage? image;
 
   const TagSidebar(
       {super.key,
-      required this.stream,
+      required this.tagsStream,
+      this.initialTags,
       this.selectable = true,
       this.searchable = true,
       this.onTagHover,
@@ -38,7 +39,7 @@ class TagSidebar extends StatefulWidget {
       required this.pendingEditCountsStream,
       this.onIncludedTagSelected,
       this.onExcludedTagSelected,
-      this.pendingEditCountsKey});
+      this.image});
 
   @override
   State<TagSidebar> createState() => _TagSidebarState();
@@ -70,23 +71,22 @@ class _TagSidebarState extends State<TagSidebar> {
         ],
       ),
       StreamBuilder<TagGroupedCounts>(
-        key: widget.pendingEditCountsKey,
-        stream: widget.pendingEditCountsStream,
-        initialData: widget.initialPendingEditCounts,
-        builder: (context, snapshot) {
-          return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            child: (snapshot.data?.added.isNotEmpty ?? false) || (snapshot.data?.removed.isNotEmpty ?? false)
-                ? TagSidebarSection(
-                    title: 'Editing',
-                    positive: snapshot.data!.added,
-                    negative: snapshot.data!.removed,
-                    sort: sort,
-                  )
-                : const SizedBox.shrink(),
-          );
-        }
-      ),
+          key: widget.image != null ? Key('imageTagCounts:${widget.image!.path}') : null,
+          stream: widget.pendingEditCountsStream,
+          initialData: widget.initialPendingEditCounts,
+          builder: (context, snapshot) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              child: (snapshot.data?.added.isNotEmpty ?? false) || (snapshot.data?.removed.isNotEmpty ?? false)
+                  ? TagSidebarSection(
+                      title: 'Editing',
+                      positive: snapshot.data!.added,
+                      negative: snapshot.data!.removed,
+                      sort: sort,
+                    )
+                  : const SizedBox.shrink(),
+            );
+          }),
       AnimatedSwitcher(
           duration: const Duration(milliseconds: 500),
           child: widget.includedTags.isNotEmpty || widget.excludedTags.isNotEmpty
@@ -109,7 +109,9 @@ class _TagSidebarState extends State<TagSidebar> {
               : const SizedBox.shrink()),
       Expanded(
         child: StreamBuilder<List<TagCount>>(
-          stream: widget.stream,
+          key: widget.image != null ? Key('imageTags:${widget.image!.path}') : null,
+          stream: widget.tagsStream,
+          initialData: widget.initialTags,
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return const Center(child: Text('No tags found'));
@@ -120,10 +122,10 @@ class _TagSidebarState extends State<TagSidebar> {
 
               sort == TagSort.count
                   ? filtered.sort((l, r) {
-                final countCompare = l.count.compareTo(r.count) * -1;
+                      final countCompare = l.count.compareTo(r.count) * -1;
 
-                return countCompare == 0 ? l.tag.compareTo(r.tag) : countCompare;
-              })
+                      return countCompare == 0 ? l.tag.compareTo(r.tag) : countCompare;
+                    })
                   : filtered.sort((l, r) => l.tag.compareTo(r.tag));
 
               return ListView.builder(

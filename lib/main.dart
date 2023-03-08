@@ -589,7 +589,7 @@ class _HomePageState extends State<HomePage> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TagSidebar(
-                      stream: _tagCountStream,
+                      tagsStream: _tagCountStream,
                       imageCount: filteredImages.length,
                       includedTags: includedTags.toList(),
                       excludedTags: excludedTags.toList(),

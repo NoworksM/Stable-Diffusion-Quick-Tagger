@@ -219,13 +219,16 @@ class _TagEditorState extends State<TagEditor> {
               Flexible(
                   flex: 2,
                   child: TagSidebar(
-                    stream: _tagCountStream,
+                    tagsStream: _galleryService.getTagStreamForImage(image)
+                        .asyncMap((d) => d.toList(growable: false))
+                        .asyncMap((d) => d.map((e) => TagCount(e, 1)).toList(growable: false)),
+                    initialTags: image.tags.map((e) => TagCount(e, 1)).toList(growable: false),
                     initialPendingEditCounts: tag_utils.transformImageEditsToCounts(_galleryService.getPendingEditForImage(image)),
-                    pendingEditCountsStream: _galleryService.getPendingEditStreamForImage(image).transform(StreamTransformer.fromHandlers(handleData: (d, s) => s.add(tag_utils.transformImageEditsToCounts(d)))),
-                    pendingEditCountsKey: Key('pendingEdits:$index'),
+                    pendingEditCountsStream: _galleryService.getPendingEditStreamForImage(image).asyncMap((d) => tag_utils.transformImageEditsToCounts(d)),
                     imageCount: 1,
                     excludedTags: removedTags,
                     includedTags: addedTags,
+                    image: image
                   ))
             ],
           ),
