@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quick_tagger/actions/back.dart';
@@ -14,7 +13,7 @@ import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 
-const imageSize = 200;
+const imageSize = 200.0;
 
 class TagEditor extends StatefulWidget {
   final int initialIndex;
@@ -37,6 +36,7 @@ class _TagEditorState extends State<TagEditor> {
   late final ScrollController _galleryController;
   int _index = 0;
   bool initialized = false;
+  final GlobalKey _galleryKey = GlobalKey();
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
@@ -45,11 +45,27 @@ class _TagEditorState extends State<TagEditor> {
   List<String> get tags => List.from(image.tags, growable: true);
 
   int get index => _index;
+
   set index(int value) {
     _index = value;
+    _updateTagCounts();
     if (initialized) {
-      _galleryController.animateTo(_index * imageSize + 8, duration: const Duration(milliseconds: 250), curve: const ElasticInOutCurve());
+      _scrollToCurrent();
     }
+  }
+
+  double get imagePosition => index * (imageSize + 8);
+
+  _scrollToCurrent() {
+    final renderBox = _galleryKey.currentContext?.findRenderObject() as RenderBox?;
+
+    double position = imagePosition;
+
+    if (renderBox != null) {
+      position -= renderBox.size.width / 2;
+    }
+
+    _galleryController.animateTo(position, duration: const Duration(milliseconds: 500), curve: Curves.easeInOutQuad);
   }
 
   @override
@@ -61,7 +77,7 @@ class _TagEditorState extends State<TagEditor> {
 
     index = widget.initialIndex;
 
-    _galleryController = ScrollController(initialScrollOffset: index * imageSize + 8);
+    _galleryController = ScrollController(initialScrollOffset: imagePosition);
 
     _updateTagCounts();
 
@@ -177,15 +193,21 @@ class _TagEditorState extends State<TagEditor> {
                           fit: BoxFit.fitHeight,
                         ))),
                     SizedBox(
-                      height: imageSize.toDouble(),
+                      height: imageSize,
                       child: ListView.builder(
+                          key: _galleryKey,
                           scrollDirection: Axis.horizontal,
                           itemCount: widget.images.length,
                           controller: _galleryController,
-                          itemBuilder: (context, idx)  => Padding(
-                            padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 4.0),
-                            child: GalleryImage(image: widget.images[idx]),
-                          )),
+                          itemBuilder: (context, idx) => Padding(
+                                padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 4.0),
+                                child: GalleryImage(
+                                    image: widget.images[idx],
+                                    selected: index == idx,
+                                    onTap: () => setState(() {
+                                          index = idx;
+                                        })),
+                              )),
                     ),
                   ],
                 ),
