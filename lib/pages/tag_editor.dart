@@ -14,6 +14,8 @@ import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 
+const imageSize = 200;
+
 class TagEditor extends StatefulWidget {
   final int initialIndex;
   final List<TaggedImage> images;
@@ -32,14 +34,23 @@ class _TagEditorState extends State<TagEditor> {
   final List<String> addedTags = List.empty(growable: true);
   final List<String> removedTags = List.empty(growable: true);
   late final ITagService _tagService;
-  final ScrollController _galleryController = ScrollController();
-  int index = 0;
+  late final ScrollController _galleryController;
+  int _index = 0;
+  bool initialized = false;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
   TaggedImage get image => widget.images[index];
 
   List<String> get tags => List.from(image.tags, growable: true);
+
+  int get index => _index;
+  set index(int value) {
+    _index = value;
+    if (initialized) {
+      _galleryController.animateTo(_index * imageSize + 8, duration: const Duration(milliseconds: 250), curve: const ElasticInOutCurve());
+    }
+  }
 
   @override
   void initState() {
@@ -50,7 +61,11 @@ class _TagEditorState extends State<TagEditor> {
 
     index = widget.initialIndex;
 
+    _galleryController = ScrollController(initialScrollOffset: index * imageSize + 8);
+
     _updateTagCounts();
+
+    initialized = true;
   }
 
   @override
@@ -162,7 +177,7 @@ class _TagEditorState extends State<TagEditor> {
                           fit: BoxFit.fitHeight,
                         ))),
                     SizedBox(
-                      height: 200,
+                      height: imageSize.toDouble(),
                       child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: widget.images.length,
