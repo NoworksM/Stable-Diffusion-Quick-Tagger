@@ -142,38 +142,38 @@ class _TagEditorState extends State<TagEditor> {
                 Actions.handler(context, BackIntent());
               }
             },
-            child: Column(
+            child: Row(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TagAutocomplete(
-                    onTagSelected: onTagSelected,
-                    onFocusNodeUpdated: (n) => _textFocusNode = n,
-                    suggestionSearch: _tagService.suggestedGlobalTags,
-                  ),
-                ),
                 Expanded(
-                  child: Row(
+                  flex: 8,
+                  child: Column(
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: TagAutocomplete(
+                          onTagSelected: onTagSelected,
+                          onFocusNodeUpdated: (n) => _textFocusNode = n,
+                          suggestionSearch: _tagService.suggestedGlobalTags,
+                        ),
+                      ),
                       Expanded(
-                          flex: 8,
                           child: Center(
                               child: Image.file(
-                            File(image.path),
-                            fit: BoxFit.fitHeight,
-                          ))),
-                      Flexible(
-                          flex: 2,
-                          child: TagSidebar(
-                            stream: _tagCountStream,
-                            pendingEdits: const [],
-                            imageCount: 1,
-                            excludedTags: removedTags,
-                            includedTags: addedTags,
-                          ))
+                        File(image.path),
+                        fit: BoxFit.fitHeight,
+                      ))),
                     ],
                   ),
                 ),
+                Flexible(
+                    flex: 2,
+                    child: TagSidebar(
+                      stream: _tagCountStream,
+                      pendingEdits: const [],
+                      imageCount: 1,
+                      excludedTags: removedTags,
+                      includedTags: addedTags,
+                    ))
               ],
             ),
           ),
