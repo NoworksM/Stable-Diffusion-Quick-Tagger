@@ -39,6 +39,7 @@ class _GalleryImageState extends State<GalleryImage> {
           Navigator.push(context, MaterialPageRoute(builder: (context) => TagEditorPage(image: widget.image)));
         }
       },
+      onTertiaryTapUp: (_) => widget.onSelected?.call(),
       child: Stack(fit: StackFit.expand, children: [
         Image.file(
           File(widget.image.path),
