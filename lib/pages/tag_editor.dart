@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quick_tagger/actions/back.dart';
 import 'package:quick_tagger/actions/save_tags.dart';
+import 'package:quick_tagger/components/gallery_image.dart';
 import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/tag_count.dart';
@@ -31,6 +32,7 @@ class _TagEditorState extends State<TagEditor> {
   final List<String> addedTags = List.empty(growable: true);
   final List<String> removedTags = List.empty(growable: true);
   late final ITagService _tagService;
+  final ScrollController _galleryController = ScrollController();
   int index = 0;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
@@ -138,46 +140,51 @@ class _TagEditorState extends State<TagEditor> {
           onFocusChange: (hasFocus) {
             if (!hasFocus) _pageFocusNode.requestFocus();
           },
-          child: Listener(
-            onPointerUp: (e) {
-              if (e.buttons & kBackMouseButton == kBackMouseButton) {
-                Actions.handler(context, BackIntent());
-              }
-            },
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 8,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: TagAutocomplete(
-                          onTagSelected: onTagSelected,
-                          onFocusNodeUpdated: (n) => _textFocusNode = n,
-                          suggestionSearch: _tagService.suggestedGlobalTags,
-                        ),
+          child: Row(
+            children: [
+              Flexible(
+                flex: 8,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TagAutocomplete(
+                        onTagSelected: onTagSelected,
+                        onFocusNodeUpdated: (n) => _textFocusNode = n,
+                        suggestionSearch: _tagService.suggestedGlobalTags,
                       ),
-                      Expanded(
-                          child: Center(
-                              child: Image.file(
-                        File(image.path),
-                        fit: BoxFit.fitHeight,
-                      ))),
-                    ],
-                  ),
+                    ),
+                    Flexible(
+                        flex: 8,
+                        child: Center(
+                            child: Image.file(
+                          File(image.path),
+                          fit: BoxFit.fitHeight,
+                        ))),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: widget.images.length,
+                          controller: _galleryController,
+                          itemBuilder: (context, idx)  => Padding(
+                            padding: const EdgeInsets.only(left: 4.0, right: 4.0, top: 4.0),
+                            child: GalleryImage(image: widget.images[idx]),
+                          )),
+                    ),
+                  ],
                 ),
-                Flexible(
-                    flex: 2,
-                    child: TagSidebar(
-                      stream: _tagCountStream,
-                      pendingEdits: const [],
-                      imageCount: 1,
-                      excludedTags: removedTags,
-                      includedTags: addedTags,
-                    ))
-              ],
-            ),
+              ),
+              Flexible(
+                  flex: 2,
+                  child: TagSidebar(
+                    stream: _tagCountStream,
+                    pendingEdits: const [],
+                    imageCount: 1,
+                    excludedTags: removedTags,
+                    includedTags: addedTags,
+                  ))
+            ],
           ),
         ),
       ),

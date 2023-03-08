@@ -41,36 +41,39 @@ class _GalleryImageState extends State<GalleryImage> {
         }
       },
       onTertiaryTapUp: (_) => widget.onSelected?.call(),
-      child: Stack(fit: StackFit.expand, children: [
-        Image.file(
-          File(widget.image.path),
-          fit: BoxFit.cover,
-        ),
-        Column(
-          children: [
-            const Spacer(),
-            Container(
-              color: Theme.of(context).dialogBackgroundColor.withAlpha(200),
-              padding: const EdgeInsets.all(8.0),
-              child: Center(
-                  child: Row(
-                children: [
-                  const Icon(Icons.sell),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Text('${widget.image.tags.length} Tags'),
-                  ),
-                ],
-              )),
-            ),
-          ],
-        ),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.fastOutSlowIn,
-          decoration: decoration,
-        )
-      ]),
+      child: SizedBox.square(
+        dimension: 200,
+        child: Stack(fit: StackFit.expand, children: [
+          Image.file(
+            File(widget.image.path),
+            fit: BoxFit.cover,
+          ),
+          Column(
+            children: [
+              const Spacer(),
+              Container(
+                color: Theme.of(context).dialogBackgroundColor.withAlpha(200),
+                padding: const EdgeInsets.all(8.0),
+                child: Center(
+                    child: Row(
+                  children: [
+                    const Icon(Icons.sell),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Text('${widget.image.tags.length} Tags'),
+                    ),
+                  ],
+                )),
+              ),
+            ],
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.fastOutSlowIn,
+            decoration: decoration,
+          )
+        ]),
+      ),
     );
   }
 }
