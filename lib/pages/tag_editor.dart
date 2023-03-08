@@ -46,6 +46,8 @@ class _TagEditorState extends State<TagEditor> {
 
     _pageFocusNode = FocusNode();
 
+    index = widget.initialIndex;
+
     _updateTagCounts();
   }
 

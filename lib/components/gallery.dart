@@ -34,7 +34,7 @@ class Gallery extends StatelessWidget {
                 hoveredTag: hoveredTag,
                 selected: selectedImages?.contains(images[idx].path) ?? false,
                 onSelected: () => onImageSelected?.call(images[idx]),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => TagEditorPage(index: idx, images: images)))),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => TagEditorPage(initialIndex: idx, images: images)))),
           );
         }
       },
