@@ -14,9 +14,10 @@ import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 
 class TagEditor extends StatefulWidget {
-  final TaggedImage image;
+  final int initialIndex;
+  final List<TaggedImage> images;
 
-  const TagEditor({super.key, required this.image});
+  const TagEditor({super.key, required this.images, this.initialIndex = 0});
 
   @override
   State<StatefulWidget> createState() => _TagEditorState();
@@ -27,12 +28,16 @@ class _TagEditorState extends State<TagEditor> {
   late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
   late FocusNode _pageFocusNode;
   late FocusNode _textFocusNode;
-  late final List<String> tags;
   final List<String> addedTags = List.empty(growable: true);
   final List<String> removedTags = List.empty(growable: true);
   late final ITagService _tagService;
+  int index = 0;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
+
+  TaggedImage get image => widget.images[index];
+
+  List<String> get tags => List.from(image.tags, growable: true);
 
   @override
   void initState() {
@@ -40,8 +45,6 @@ class _TagEditorState extends State<TagEditor> {
     _tagService = getIt.get<ITagService>();
 
     _pageFocusNode = FocusNode();
-
-    tags = List.from(widget.image.tags, growable: true);
 
     _updateTagCounts();
   }
@@ -126,7 +129,7 @@ class _TagEditorState extends State<TagEditor> {
         const SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true): BackIntent(),
       },
       child: Actions(
-        actions: <Type, Action<Intent>>{SaveTagsIntent: SaveTagsAction(widget.image, tags, onTagsSaved), BackIntent: BackAction(context)},
+        actions: <Type, Action<Intent>>{SaveTagsIntent: SaveTagsAction(image, tags, onTagsSaved), BackIntent: BackAction(context)},
         child: Focus(
           autofocus: true,
           focusNode: _pageFocusNode,
@@ -156,7 +159,7 @@ class _TagEditorState extends State<TagEditor> {
                           flex: 8,
                           child: Center(
                               child: Image.file(
-                            File(widget.image.path),
+                            File(image.path),
                             fit: BoxFit.fitHeight,
                           ))),
                       Flexible(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quick_tagger/components/gallery_image.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/pages/tag_editor_page.dart';
 
 class Gallery extends StatelessWidget {
   final Stream<List<TaggedImage>> stream;
@@ -32,7 +33,8 @@ class Gallery extends StatelessWidget {
                 image: images[idx],
                 hoveredTag: hoveredTag,
                 selected: selectedImages?.contains(images[idx].path) ?? false,
-                onSelected: () => onImageSelected?.call(images[idx])),
+                onSelected: () => onImageSelected?.call(images[idx]),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => TagEditorPage(index: idx, images: images)))),
           );
         }
       },

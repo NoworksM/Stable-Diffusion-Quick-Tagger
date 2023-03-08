@@ -11,8 +11,9 @@ class GalleryImage extends StatefulWidget {
   final String? hoveredTag;
   final bool selected;
   final Function()? onSelected;
+  final Function()? onTap;
 
-  const GalleryImage({super.key, required this.image, this.hoveredTag, this.selected = false, this.onSelected});
+  const GalleryImage({super.key, required this.image, this.hoveredTag, this.selected = false, this.onSelected, this.onTap});
 
   @override
   State<StatefulWidget> createState() => _GalleryImageState();
@@ -34,9 +35,9 @@ class _GalleryImageState extends State<GalleryImage> {
       onTap: () {
         if (widget.onSelected != null &&
             HardwareKeyboard.instance.logicalKeysPressed.containsAny([LogicalKeyboardKey.shift, LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight])) {
-          widget.onSelected!.call();
+          widget.onSelected?.call();
         } else {
-          Navigator.push(context, MaterialPageRoute(builder: (context) => TagEditorPage(image: widget.image)));
+          widget.onTap?.call();
         }
       },
       onTertiaryTapUp: (_) => widget.onSelected?.call(),

@@ -4,17 +4,18 @@ import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/pages/tag_editor.dart';
 
 class TagEditorPage extends StatelessWidget {
-  final TaggedImage image;
+  final int index;
+  final List<TaggedImage> images;
 
-  const TagEditorPage({super.key, required this.image});
+  const TagEditorPage({super.key, required this.images, required this.index});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-            title: Text('Edit: ${p.basename(image.path)}')
+            title: Text('Edit: ${p.basename(images[index].path)}')
         ),
-        body: TagEditor(image: image),
+        body: TagEditor(images: images, initialIndex: index),
     );
   }
 }
