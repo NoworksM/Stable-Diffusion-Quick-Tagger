@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
@@ -18,11 +19,13 @@ class TagSidebar extends StatefulWidget {
   final Function(String)? onExcludedTagSelected;
   final bool selectable;
   final int imageCount;
+  final bool searchable;
 
   const TagSidebar(
       {super.key,
       required this.stream,
       this.selectable = true,
+      this.searchable = true,
       this.onTagHover,
       required this.imageCount,
       required this.includedTags,
@@ -62,6 +65,26 @@ class _TagSidebarState extends State<TagSidebar> {
   TagSort sort = TagSort.count;
   String? hoveredTag;
   int totalTags = 0;
+  String _tagSearch = '';
+  final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
+  late final Stream<List<TagCount>> _tagCountStream;
+  List<TagCount>? _tagCounts;
+
+  String get tagSearch => _tagSearch;
+
+  set tagSearch(String value) {
+    _tagSearch = value;
+    if (_tagCounts != null) {
+      _tagCountStreamController.add(_tagCounts!);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tagCountStreamController.addStream(widget.stream);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,27 +130,38 @@ class _TagSidebarState extends State<TagSidebar> {
                   onNegativeSelected: widget.onExcludedTagSelected)
               : const SizedBox.shrink()),
       const TagSectionHeader(title: 'Tags'),
+      AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: widget.searchable
+              ? TextFormField(
+                  onChanged: (v) => setState(() {
+                        _tagSearch = v;
+                      }))
+              : const SizedBox.shrink()),
       Expanded(
         child: StreamBuilder<List<TagCount>>(
-          stream: widget.stream,
+          stream: _tagCountStream,
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return const Center(child: Text('No tags found'));
             } else {
               totalTags = snapshot.data!.length;
 
-              sort == TagSort.count
-                  ? snapshot.data!.sort((l, r) {
-                      final countCompare = l.count.compareTo(r.count) * -1;
+              final filtered = snapshot.data!.where((t) => t.tag.toLowerCase().contains(tagSearch.toLowerCase())).toList(growable: false);
 
-                      return countCompare == 0 ? l.tag.compareTo(r.tag) : countCompare;
-                    })
-                  : snapshot.data!.sort((l, r) => l.tag.compareTo(r.tag));
+              sort == TagSort.count
+                  ? filtered.sort((l, r) {
+                final countCompare = l.count.compareTo(r.count) * -1;
+
+                return countCompare == 0 ? l.tag.compareTo(r.tag) : countCompare;
+              })
+                  : filtered.sort((l, r) => l.tag.compareTo(r.tag));
+
               return ListView.builder(
-                itemCount: snapshot.data!.length,
+                itemCount: filtered.length,
                 itemBuilder: (context, idx) => TagSidebarItem(
-                  tag: snapshot.data![idx].tag,
-                  count: snapshot.data![idx].count,
+                  tag: filtered[idx].tag,
+                  count: filtered[idx].count,
                   selectable: widget.selectable,
                   onHover: (t) => widget.onTagHover?.call(t),
                   onInclude: (t) => widget.onIncludedTagSelected?.call(t),
