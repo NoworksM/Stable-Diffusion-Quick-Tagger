@@ -17,8 +17,7 @@ import 'package:quick_tagger/components/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
-import 'package:quick_tagger/utils/functional_utils.dart';
-import 'package:quick_tagger/utils/tag_utils.dart' as tagUtils;
+import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -102,7 +101,6 @@ class _HomePageState extends State<HomePage> {
   String? hoveredTag;
   HashSet<String> includedTags = HashSet<String>.identity();
   HashSet<String> excludedTags = HashSet<String>.identity();
-  final HashMap<String, HashSet<Edit>> pendingEdits = HashMap<String, HashSet<Edit>>();
   late final IGalleryService _galleryService;
   late final ITagService _tagService;
   late final SharedPreferences _preferences;
@@ -123,7 +121,7 @@ class _HomePageState extends State<HomePage> {
     await _galleryService.loadImages(path);
   }
 
-  List<TaggedImage> get filteredImages => tagUtils.filterImagesForTagsAndEdits(_images, pendingEdits, includedTags, excludedTags);
+  List<TaggedImage> get filteredImages => tag_utils.filterImagesForTagsAndEdits(_images, _galleryService.pendingEdits, includedTags, excludedTags);
 
   List<TaggedImage> get selectedImages {
     if (_selectedImagePaths.isEmpty) {
@@ -213,7 +211,10 @@ class _HomePageState extends State<HomePage> {
 
   /// Callback for when a tag is added or removed from the selected images
   FutureOr<bool> _onTagSelected(String tag) async {
+    final pendingEdits = _galleryService.pendingEdits;
     final editingImages = selectedImages;
+    final added = List<FilePendingEdit>.empty(growable: true);
+    final removed = List<FilePendingEdit>.empty(growable: true);
 
     int hasCount = 0;
     int addedCount = 0;
@@ -260,15 +261,19 @@ class _HomePageState extends State<HomePage> {
           return false;
         }
 
-        setState(() {
-          for (final edits in pendingEdits.values) {
-            if (add) {
-              edits.remove(Edit(tag, EditType.add.invert()));
-            } else {
-              edits.remove(Edit(tag, EditType.remove.invert()));
-            }
+        for (final pair in pendingEdits.entries) {
+          final path = pair.key;
+          // final edit = pair.value;
+
+          if (add) {
+            removed.add(MapEntry(path, Edit(tag, EditType.add.invert())));
+          } else {
+            removed.add(MapEntry(path, Edit(tag, EditType.remove.invert())));
           }
-        });
+        }
+
+        _galleryService.queueFileEdits(added);
+        _galleryService.dequeueFileEdits(removed);
 
         return true;
       } else if (anyHasAdded) {
@@ -281,17 +286,16 @@ class _HomePageState extends State<HomePage> {
 
         final existingEdit = Edit(tag, EditType.add);
 
-        setState(() {
-          for (final image in editingImages) {
-            final edits = pendingEdits.putIfAbsent(image.path, () => HashSet<Edit>());
+        for (final image in editingImages) {
+          removed.add(MapEntry(image.path, existingEdit));
 
-            edits.remove(existingEdit);
-
-            if (!removeOnly && image.tags.contains(tag)) {
-              edits.add(Edit(tag, EditType.remove));
-            }
+          if (!removeOnly && image.tags.contains(tag)) {
+            added.add(MapEntry(image.path, Edit(tag, EditType.remove)));
           }
-        });
+        }
+
+        _galleryService.queueFileEdits(added);
+        _galleryService.dequeueFileEdits(removed);
 
         return true;
       } else {
@@ -304,23 +308,23 @@ class _HomePageState extends State<HomePage> {
 
         final existingEdit = Edit(tag, EditType.remove);
 
-        setState(() {
-          for (final image in editingImages) {
-            final edits = pendingEdits.putIfAbsent(image.path, () => HashSet<Edit>());
+        for (final image in editingImages) {
+          removed.add(MapEntry(image.path, existingEdit));
 
-            edits.remove(existingEdit);
-
-            if (!addOnly && !image.tags.contains(tag)) {
-              edits.add(Edit(tag, EditType.add));
-            }
+          if (!addOnly && !image.tags.contains(tag)) {
+            added.add(MapEntry(image.path, Edit(tag, EditType.add)));
           }
-        });
+        }
+
+        _galleryService.queueFileEdits(added);
+        _galleryService.dequeueFileEdits(removed);
 
         return true;
       }
     }
 
     if (anyWithTag && anyWithoutTag) {
+      // ignore: use_build_context_synchronously
       final add = await showDialog<bool>(context: context, builder: _buildMixedTagEditDialogBuilder(tag, hasCount + addedCount, editingImages.length));
 
       if (add == null) {
@@ -334,28 +338,27 @@ class _HomePageState extends State<HomePage> {
       editType = EditType.remove;
     }
 
-    setState(() {
-      for (final image in editingImages) {
-        bool hasTag = image.tags.contains(tag);
-        bool hasEdit = pendingEdits[image.path]?.contains(Edit(tag, editType)) ?? false;
-        bool hasInvertedEdit = pendingEdits[image.path]?.contains(Edit(tag, editType.invert())) ?? false;
+    for (final image in editingImages) {
+      bool hasTag = image.tags.contains(tag);
+      bool hasEdit = pendingEdits[image.path]?.contains(Edit(tag, editType)) ?? false;
+      bool hasInvertedEdit = pendingEdits[image.path]?.contains(Edit(tag, editType.invert())) ?? false;
 
-        if (hasEdit) {
-          continue;
-        }
-
-        if (hasInvertedEdit) {
-          pendingEdits[image.path]!.remove(Edit(tag, editType.invert()));
-        } else if (hasTag && editType == EditType.remove || !hasTag && editType == EditType.add) {
-          final edits = pendingEdits.putIfAbsent(image.path, () => HashSet<Edit>());
-
-          edits.add(Edit(tag, editType));
-          edits.remove(Edit(tag, editType.invert()));
-        }
+      if (hasEdit) {
+        continue;
       }
 
-      _imageStreamController.add(filteredImages);
-    });
+      if (hasInvertedEdit) {
+        removed.add(MapEntry(image.path, Edit(tag, editType.invert())));
+      } else if (hasTag && editType == EditType.remove || !hasTag && editType == EditType.add) {
+        added.add(MapEntry(image.path, Edit(tag, editType)));
+        removed.add(MapEntry(image.path, Edit(tag, editType.invert())));
+      }
+    }
+
+    _galleryService.queueFileEdits(added);
+    _galleryService.dequeueFileEdits(removed);
+
+    _imageStreamController.add(filteredImages);
 
     return true;
   }
@@ -445,13 +448,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   _saveChanges() async {
-    final results = await _galleryService.saveAllChanges(pendingEdits);
-
-    setState(() {
-      pendingEdits.clear();
-
-      pendingEdits.addEntries(results.entries);
-    });
+    await _galleryService.savePendingChanges();
   }
 
   @override
@@ -462,7 +459,7 @@ class _HomePageState extends State<HomePage> {
 
     _pageFocusNode = FocusNode();
 
-    _galleryService.galleryStream.listen((images) {
+    _galleryService.galleryImagesStream.listen((images) {
       setState(() {
         _images = images;
         _imageStreamController.add(filteredImages);
@@ -556,6 +553,7 @@ class _HomePageState extends State<HomePage> {
                           child: TagAutocomplete(
                             onTagSelected: _onTagSelected,
                             suggestionSearch: _tagService.suggestedGlobalTags,
+                            hintText: 'Add or remove tags'
                           ),
                         ),
                         Expanded(
@@ -576,11 +574,13 @@ class _HomePageState extends State<HomePage> {
                         Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: ImageCountFooter(
-                              images: _images.length,
-                              filtered: filteredImages.length,
-                              selected: selectedImages.length,
-                              filteredTags: includedTags.length + excludedTags.length,
-                            onClearSelection: () => setState(() { _selectedImagePaths.clear(); }),
+                            images: _images.length,
+                            filtered: filteredImages.length,
+                            selected: selectedImages.length,
+                            filteredTags: includedTags.length + excludedTags.length,
+                            onClearSelection: () => setState(() {
+                              _selectedImagePaths.clear();
+                            }),
                           ),
                         ),
                       ],
@@ -591,11 +591,13 @@ class _HomePageState extends State<HomePage> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TagSidebar(
-                      stream: _tagCountStream,
+                      tagsStream: _tagCountStream,
                       imageCount: filteredImages.length,
                       includedTags: includedTags.toList(),
                       excludedTags: excludedTags.toList(),
-                      pendingEdits: pendingEdits.values.flatten().toList(growable: false),
+                      initialPendingEditCounts: tag_utils.transformEditsToCounts(_galleryService.pendingEdits),
+                      pendingEditCountsStream: _galleryService.pendingEditsStream
+                          .transform(StreamTransformer.fromHandlers(handleData: (d, s) => s.add(tag_utils.transformEditsToCounts(d)))),
                       onTagHover: (t) => setState(() {
                         hoveredTag = t;
                       }),

@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
-import 'package:quick_tagger/pages/tag_editor_page.dart';
 import 'package:quick_tagger/utils/collection_utils.dart';
 
 class GalleryImage extends StatefulWidget {
