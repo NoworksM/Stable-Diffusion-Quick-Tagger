@@ -66,25 +66,6 @@ class _TagSidebarState extends State<TagSidebar> {
   String? hoveredTag;
   int totalTags = 0;
   String _tagSearch = '';
-  final StreamController<List<TagCount>> _tagCountStreamController = StreamController();
-  late final Stream<List<TagCount>> _tagCountStream;
-  List<TagCount>? _tagCounts;
-
-  String get tagSearch => _tagSearch;
-
-  set tagSearch(String value) {
-    _tagSearch = value;
-    if (_tagCounts != null) {
-      _tagCountStreamController.add(_tagCounts!);
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _tagCountStreamController.addStream(widget.stream);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,14 +121,14 @@ class _TagSidebarState extends State<TagSidebar> {
               : const SizedBox.shrink()),
       Expanded(
         child: StreamBuilder<List<TagCount>>(
-          stream: _tagCountStream,
+          stream: widget.stream,
           builder: (context, snapshot) {
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return const Center(child: Text('No tags found'));
             } else {
               totalTags = snapshot.data!.length;
 
-              final filtered = snapshot.data!.where((t) => t.tag.toLowerCase().contains(tagSearch.toLowerCase())).toList(growable: false);
+              final filtered = snapshot.data!.where((t) => t.tag.toLowerCase().contains(_tagSearch.toLowerCase())).toList(growable: false);
 
               sort == TagSort.count
                   ? filtered.sort((l, r) {
