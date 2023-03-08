@@ -5,21 +5,25 @@ import 'package:flutter/material.dart';
 import 'package:quick_tagger/components/tag_section_header.dart';
 import 'package:quick_tagger/components/tag_sidebar_item.dart';
 import 'package:quick_tagger/components/tag_sidebar_section.dart';
-import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
+import 'package:quick_tagger/data/tag_grouped_counts.dart';
 import 'package:quick_tagger/data/tag_sort.dart';
+import 'package:quick_tagger/services/gallery_service.dart';
+import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
 
 class TagSidebar extends StatefulWidget {
   final Stream<List<TagCount>> stream;
   final Function(String?)? onTagHover;
   final List<String> includedTags;
   final List<String> excludedTags;
-  final List<Edit> pendingEdits;
+  final Stream<TagGroupedCounts> pendingEditCountsStream;
+  final TagGroupedCounts? initialPendingEditCounts;
   final Function(String)? onIncludedTagSelected;
   final Function(String)? onExcludedTagSelected;
   final bool selectable;
   final int imageCount;
   final bool searchable;
+  final Key? pendingEditCountsKey;
 
   const TagSidebar(
       {super.key,
@@ -30,32 +34,11 @@ class TagSidebar extends StatefulWidget {
       required this.imageCount,
       required this.includedTags,
       required this.excludedTags,
-      required this.pendingEdits,
+      this.initialPendingEditCounts,
+      required this.pendingEditCountsStream,
       this.onIncludedTagSelected,
-      this.onExcludedTagSelected});
-
-  _TagGroupedCounts get _editedGroupCounts {
-    final added = HashMap<String, TagCount>.identity();
-    final removed = HashMap<String, TagCount>.identity();
-
-    for (final edit in pendingEdits) {
-      late final TagCount count;
-      switch (edit.type) {
-        case EditType.add:
-          count = added.putIfAbsent(edit.value, () => TagCount(edit.value, 0));
-          break;
-        case EditType.remove:
-          count = removed.putIfAbsent(edit.value, () => TagCount(edit.value, 0));
-          break;
-        default:
-          throw ArgumentError();
-      }
-
-      count.count++;
-    }
-
-    return _TagGroupedCounts(added.values.toList(), removed.values.toList());
-  }
+      this.onExcludedTagSelected,
+      this.pendingEditCountsKey});
 
   @override
   State<TagSidebar> createState() => _TagSidebarState();
@@ -69,8 +52,6 @@ class _TagSidebarState extends State<TagSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final groupedCounts = widget._editedGroupCounts;
-
     return Column(children: [
       Row(
         children: [
@@ -88,19 +69,26 @@ class _TagSidebarState extends State<TagSidebar> {
               color: sort == TagSort.alphabetical ? Theme.of(context).colorScheme.secondary : null),
         ],
       ),
-      AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: widget.pendingEdits.isNotEmpty
-            ? TagSidebarSection(
-                title: 'Editing',
-                positive: groupedCounts.added,
-                negative: groupedCounts.removed,
-                sort: sort,
-              )
-            : const SizedBox.shrink(),
+      StreamBuilder<TagGroupedCounts>(
+        key: widget.pendingEditCountsKey,
+        stream: widget.pendingEditCountsStream,
+        initialData: widget.initialPendingEditCounts,
+        builder: (context, snapshot) {
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            child: (snapshot.data?.added.isNotEmpty ?? false) || (snapshot.data?.removed.isNotEmpty ?? false)
+                ? TagSidebarSection(
+                    title: 'Editing',
+                    positive: snapshot.data!.added,
+                    negative: snapshot.data!.removed,
+                    sort: sort,
+                  )
+                : const SizedBox.shrink(),
+          );
+        }
       ),
       AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 500),
           child: widget.includedTags.isNotEmpty || widget.excludedTags.isNotEmpty
               ? TagSidebarSection(
                   title: 'Filtered',
@@ -155,11 +143,4 @@ class _TagSidebarState extends State<TagSidebar> {
       ),
     ]);
   }
-}
-
-class _TagGroupedCounts {
-  List<TagCount> added;
-  List<TagCount> removed;
-
-  _TagGroupedCounts(this.added, this.removed);
 }

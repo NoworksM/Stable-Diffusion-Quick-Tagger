@@ -4,9 +4,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/file_tag_info.dart';
+import 'package:quick_tagger/data/tag_count.dart';
+import 'package:quick_tagger/data/tag_grouped_counts.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/services/gallery_service.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as futils;
+import 'package:quick_tagger/utils/tag_utils.dart';
 
 TagFile parseTags(String path, String tagFileContents) {
   TagSeparator? separator;
@@ -112,7 +116,7 @@ Future<void> save(TagFile tagFile, Iterable<String> tags) async {
   await File(tagFile.path).writeAsString(builder.toString());
 }
 
-HashSet<String> buildEditedSetOfTagsForImage(TaggedImage image, HashSet<Edit> edits) {
+HashSet<String> buildEditedSetOfTagsForImage(TaggedImage image, Set<Edit> edits) {
   final editedTags = HashSet<String>();
 
   for (final tag in image.tags) {
@@ -130,7 +134,7 @@ HashSet<String> buildEditedSetOfTagsForImage(TaggedImage image, HashSet<Edit> ed
   return editedTags;
 }
 
-List<TaggedImage> filterImagesForTagsAndEdits(List<TaggedImage> images, HashMap<String, HashSet<Edit>> allEdits, Set<String> includedTags, Set<String> excludedTags) {
+List<TaggedImage> filterImagesForTagsAndEdits(List<TaggedImage> images, Map<String, Set<Edit>> allEdits, Set<String> includedTags, Set<String> excludedTags) {
   final filteredImages = List<TaggedImage>.empty(growable: true);
 
   for (final image in images) {
@@ -162,4 +166,61 @@ List<TaggedImage> filterImagesForTagsAndEdits(List<TaggedImage> images, HashMap<
   }
 
   return filteredImages;
+}
+
+transformEditsToCounts(PendingEdits? edits) {
+  if (edits == null) {
+    return TagGroupedCounts(List.empty(), List.empty());
+  }
+
+  final added = HashMap<String, TagCount>.identity();
+  final removed = HashMap<String, TagCount>.identity();
+
+  for (final imageEdits in edits.values) {
+    for (final edit in imageEdits) {
+      late final TagCount count;
+      switch (edit.type) {
+        case EditType.add:
+          count = added.putIfAbsent(edit.value, () => TagCount(edit.value, 0));
+          break;
+        case EditType.remove:
+          count = removed.putIfAbsent(edit.value, () => TagCount(edit.value, 0));
+          break;
+        default:
+          throw ArgumentError();
+      }
+
+      count.count++;
+    }
+  }
+
+  return TagGroupedCounts(added.values.toList(), removed.values.toList());
+}
+
+transformImageEditsToCounts(PendingEdit? imageEdits) {
+  if (imageEdits == null) {
+    return TagGroupedCounts(List.empty(), List.empty());
+  }
+
+  final added = HashMap<String, TagCount>.identity();
+  final removed = HashMap<String, TagCount>.identity();
+
+
+  for (final edit in imageEdits) {
+    late final TagCount count;
+    switch (edit.type) {
+      case EditType.add:
+        count = added.putIfAbsent(edit.value, () => TagCount(edit.value, 0));
+        break;
+      case EditType.remove:
+        count = removed.putIfAbsent(edit.value, () => TagCount(edit.value, 0));
+        break;
+      default:
+        throw ArgumentError();
+    }
+
+    count.count++;
+  }
+
+  return TagGroupedCounts(added.values.toList(), removed.values.toList());
 }
