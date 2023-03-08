@@ -7,20 +7,17 @@ import 'package:quick_tagger/services/tag_service.dart';
 class TagAutocomplete extends StatefulWidget {
   final FutureOr<bool> Function(String)? onTagSelected;
   final Function(FocusNode)? onFocusNodeUpdated;
+  final Iterable<String> Function(String) suggestionSearch;
 
-  const TagAutocomplete({super.key, this.onTagSelected, this.onFocusNodeUpdated});
+  const TagAutocomplete({super.key, this.onTagSelected, this.onFocusNodeUpdated, required this.suggestionSearch});
 
   @override
   State<StatefulWidget> createState() => _TagAutocompleteState();
 }
 
 class _TagAutocompleteState extends State<TagAutocomplete> {
-  final ITagService _tagService;
   late TextEditingController _tagTextController;
   bool _hasSuggestions = false;
-
-  _TagAutocompleteState()
-    : _tagService = getIt.get<ITagService>();
 
   _onTagSelected(String tag) async {
     final trimmed = tag.trim();
@@ -57,7 +54,7 @@ class _TagAutocompleteState extends State<TagAutocomplete> {
         return field;
       },
       optionsBuilder: (v) {
-        final suggested = _tagService.suggestedTags(v.text).toList(growable: false);
+        final suggested = widget.suggestionSearch(v.text).toList(growable: false);
 
         _hasSuggestions = suggested.isNotEmpty;
 
@@ -66,5 +63,4 @@ class _TagAutocompleteState extends State<TagAutocomplete> {
       onSelected: (s) => _onTagSelected(s),
     );
   }
-
 }

@@ -10,6 +10,8 @@ import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/ioc.dart';
+import 'package:quick_tagger/services/tag_service.dart';
 
 class TagEditor extends StatefulWidget {
   final TaggedImage image;
@@ -28,12 +30,14 @@ class _TagEditorState extends State<TagEditor> {
   late final List<String> tags;
   final List<String> addedTags = List.empty(growable: true);
   final List<String> removedTags = List.empty(growable: true);
+  late final ITagService _tagService;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
   @override
   void initState() {
     super.initState();
+    _tagService = getIt.get<ITagService>();
 
     _pageFocusNode = FocusNode();
 
@@ -142,6 +146,7 @@ class _TagEditorState extends State<TagEditor> {
                   child: TagAutocomplete(
                     onTagSelected: onTagSelected,
                     onFocusNodeUpdated: (n) => _textFocusNode = n,
+                    suggestionSearch: _tagService.suggestedGlobalTags,
                   ),
                 ),
                 Expanded(

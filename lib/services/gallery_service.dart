@@ -61,8 +61,7 @@ class GalleryService implements IGalleryService {
       }
     }
 
-    // TODO: Add in code to modify for tags that don't exist
-    // _tagService.replaceTags(tags.toList(growable: false));
+    _tagService.replaceDatasetTags(tags.toList(growable: false));
 
     _images = newImages;
   }

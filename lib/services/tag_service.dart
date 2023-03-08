@@ -4,10 +4,16 @@ import 'package:injectable/injectable.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data_structures/trie.dart';
 
-abstract class ITagService {
-  Iterable<String> suggestedTags(String term);
+const suggestionLimit = 10;
 
-  void replaceTags(List<String> tags);
+abstract class ITagService {
+  Iterable<String> suggestedDatasetTags(String term);
+
+  Iterable<String> suggestedGlobalTags(String term);
+
+  void replaceDatasetTags(List<String> tags);
+
+  void replaceGlobalTags(List<String> tags);
 
   void replaceTagCounts(List<TagCount> tagCounts);
 
@@ -18,23 +24,39 @@ abstract class ITagService {
 class TagService implements ITagService {
   final StreamController<List<TagCount>> _tagCountStreamController = StreamController<List<TagCount>>();
   late final Stream<List<TagCount>> _tagCountStream = _tagCountStreamController.stream.asBroadcastStream();
-  Trie trie;
+  Trie globalTrie;
+  Trie datasetTrie;
 
   TagService()
-    : trie = Trie.empty();
+    : globalTrie = Trie.empty(),
+      datasetTrie = Trie.empty();
 
   @override
-  Iterable<String> suggestedTags(String term) {
+  Iterable<String> suggestedDatasetTags(String term) {
     if (term.isEmpty) {
       return <String>[];
     }
 
-    return trie.findSuggestions(term).take(10);
+    return datasetTrie.findSuggestions(term).take(suggestionLimit);
   }
 
   @override
-  void replaceTags(List<String> tags) {
-    trie = Trie(tags);
+  Iterable<String> suggestedGlobalTags(String term) {
+    if (term.isEmpty) {
+      return <String>[];
+    }
+
+    return globalTrie.findSuggestions(term).take(suggestionLimit);
+  }
+
+  @override
+  void replaceDatasetTags(List<String> tags) {
+    datasetTrie = Trie(tags);
+  }
+
+  @override
+  void replaceGlobalTags(List<String> tags) {
+    globalTrie = Trie(tags);
   }
 
   @override

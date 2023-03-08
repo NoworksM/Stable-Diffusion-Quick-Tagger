@@ -36,7 +36,7 @@ void initTags() {
 
   final tagService = getIt.get<ITagService>();
 
-  tagService.replaceTags(tags.toList(growable: false));
+  tagService.replaceGlobalTags(tags.toList(growable: false));
 }
 
 const prefLastPath = 'gallery.last_path';
@@ -104,6 +104,7 @@ class _HomePageState extends State<HomePage> {
   HashSet<String> excludedTags = HashSet<String>.identity();
   final HashMap<String, HashSet<Edit>> pendingEdits = HashMap<String, HashSet<Edit>>();
   late final IGalleryService _galleryService;
+  late final ITagService _tagService;
   late final SharedPreferences _preferences;
   late final FocusNode _pageFocusNode;
   final Set<String> _selectedImagePaths = HashSet<String>();
@@ -457,6 +458,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _galleryService = getIt.get<IGalleryService>();
+    _tagService = getIt.get<ITagService>();
 
     _pageFocusNode = FocusNode();
 
@@ -553,6 +555,7 @@ class _HomePageState extends State<HomePage> {
                           margin: const EdgeInsetsDirectional.symmetric(vertical: 8.0),
                           child: TagAutocomplete(
                             onTagSelected: _onTagSelected,
+                            suggestionSearch: _tagService.suggestedGlobalTags,
                           ),
                         ),
                         Expanded(
