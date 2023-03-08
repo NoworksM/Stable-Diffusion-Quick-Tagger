@@ -35,48 +35,66 @@ class Options extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
-      Row(
-        children: [
-          Flexible(
-            child: TextFormField(
-              enabled: false,
-              initialValue: folder,
-              decoration: const InputDecoration(labelText: 'Path'),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Tooltip(
+                  message: folder,
+                  child: TextFormField(
+                    enabled: false,
+                    initialValue: folder,
+                    decoration: const InputDecoration(labelText: 'Path'),
+                  ),
+                ),
+              ),
             ),
-          ),
-          Flexible(
-            child: ElevatedButton(
+            ElevatedButton(
               onPressed: selectFolder,
               child: const Text('Select Folder'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      CheckboxListTile(
-        value: autoSaveTags,
-        onChanged: (v) => onAutoSaveTagsChanged?.call(v),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+        child: CheckboxListTile(
+          title: const Text('Auto Save Tags'),
+          value: autoSaveTags,
+          onChanged: (v) => onAutoSaveTagsChanged?.call(v),
+        ),
       ),
-      DropdownButtonFormField<TagSeparator>(
-        decoration: const InputDecoration(labelText: 'Tagfile Format'),
-        value: tagSeparator,
-        onChanged: (t) => onTagSeparatorChanged?.call(t),
-        items: TagSeparator.values
-            .map((t) => DropdownMenuItem<TagSeparator>(
-                  value: t,
-                  child: Text(t.userFriendly()),
-                ))
-            .toList(),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+        child: DropdownButtonFormField<TagSeparator>(
+          decoration: const InputDecoration(labelText: 'Tag Separator'),
+          value: tagSeparator,
+          onChanged: (t) => onTagSeparatorChanged?.call(t),
+          items: TagSeparator.values
+              .map((t) => DropdownMenuItem<TagSeparator>(
+                    value: t,
+                    child: Text(t.userFriendly()),
+                  ))
+              .toList(),
+        ),
       ),
-      DropdownButtonFormField<TagSpaceCharacter>(
-        decoration: const InputDecoration(labelText: 'Tagfile Format'),
-        value: tagSpaceCharacter,
-        onChanged: (t) => onTagSpaceCharacterChanged?.call(t),
-        items: TagSpaceCharacter.values
-            .map((t) => DropdownMenuItem<TagSpaceCharacter>(
-                  value: t,
-                  child: Text(t.userFriendly()),
-                ))
-            .toList(),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+        child: DropdownButtonFormField<TagSpaceCharacter>(
+          decoration: const InputDecoration(labelText: 'Tag Space Character'),
+          value: tagSpaceCharacter,
+          onChanged: (t) => onTagSpaceCharacterChanged?.call(t),
+          items: TagSpaceCharacter.values
+              .map((t) => DropdownMenuItem<TagSpaceCharacter>(
+                    value: t,
+                    child: Text(t.userFriendly()),
+                  ))
+              .toList(),
+        ),
       ),
     ]);
   }

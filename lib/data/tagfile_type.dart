@@ -17,7 +17,7 @@ extension TagSeparatorExtensions on TagSeparator {
       case TagSeparator.comma:
         return ',';
       case TagSeparator.lineBreak:
-        return '\n (Line Break)';
+        return '(Line Break)';
       default:
         throw ArgumentError.value(this);
     }
