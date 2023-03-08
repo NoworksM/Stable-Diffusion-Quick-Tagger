@@ -100,7 +100,7 @@ class _TagEditorState extends State<TagEditor> {
         _galleryService.queueEditForImage(image, edit);
       }
     } else {
-      final edit = Edit(tag, EditType.remove);
+      final edit = Edit(tag, EditType.add);
 
       if (pendingEdits.contains(edit)) {
         _galleryService.dequeueEditForImage(image, edit);
