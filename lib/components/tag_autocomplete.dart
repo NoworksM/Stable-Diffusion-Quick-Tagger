@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:quick_tagger/utils/collection_utils.dart';
 
 class TagAutocomplete extends StatefulWidget {
   final FutureOr<bool> Function(String)? onTagSelected;
@@ -41,7 +43,9 @@ class _TagAutocompleteState extends State<TagAutocomplete> {
           controller: _tagTextController,
           decoration: InputDecoration(hintText: widget.hintText),
           onSubmitted: (s) {
-            if (_hasSuggestions) {
+            if (_hasSuggestions &&
+                !HardwareKeyboard.instance.logicalKeysPressed
+                    .containsAny([LogicalKeyboardKey.control, LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.controlRight])) {
               onFieldSubmitted();
             } else {
               _onTagSelected(s);
