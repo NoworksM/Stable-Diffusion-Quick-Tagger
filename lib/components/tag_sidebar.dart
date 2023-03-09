@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:quick_tagger/components/tag_section_header.dart';
 import 'package:quick_tagger/components/tag_sidebar_item.dart';
 import 'package:quick_tagger/components/tag_sidebar_section.dart';
@@ -8,6 +9,7 @@ import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tag_grouped_counts.dart';
 import 'package:quick_tagger/data/tag_sort.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/utils/collection_utils.dart';
 
 class TagSidebar extends StatefulWidget {
   final Stream<List<TagCount>> tagsStream;
@@ -19,6 +21,7 @@ class TagSidebar extends StatefulWidget {
   final TagGroupedCounts? initialPendingEditCounts;
   final Function(String)? onIncludedTagSelected;
   final Function(String)? onExcludedTagSelected;
+  final Function(String)? onRemoveTagSelected;
   final bool selectable;
   final int imageCount;
   final bool searchable;
@@ -38,6 +41,7 @@ class TagSidebar extends StatefulWidget {
       required this.pendingEditCountsStream,
       this.onIncludedTagSelected,
       this.onExcludedTagSelected,
+      this.onRemoveTagSelected,
       this.image});
 
   @override
@@ -137,7 +141,14 @@ class _TagSidebarState extends State<TagSidebar> {
                   selectable: widget.selectable,
                   onHover: (t) => widget.onTagHover?.call(t),
                   onInclude: (t) => widget.onIncludedTagSelected?.call(t),
-                  onExclude: (t) => widget.onExcludedTagSelected?.call(t),
+                  onExclude: (t) {
+                    if (widget.onRemoveTagSelected != null && HardwareKeyboard.instance.logicalKeysPressed
+                        .containsAny([LogicalKeyboardKey.shift, LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight])) {
+                      widget.onRemoveTagSelected!.call(t);
+                    } else {
+                      widget.onExcludedTagSelected?.call(t);
+                    }
+                  },
                 ),
               );
             }

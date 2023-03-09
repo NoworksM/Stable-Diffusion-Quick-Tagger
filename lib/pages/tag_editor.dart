@@ -210,7 +210,9 @@ class _TagEditorState extends State<TagEditor> {
                       initialPendingEditCounts: tag_utils.transformImageEditsToCounts(_galleryService.getPendingEditForImage(image)),
                       pendingEditCountsStream: _galleryService.getPendingEditStreamForImage(image).asyncMap((d) => tag_utils.transformImageEditsToCounts(d)),
                       imageCount: 1,
-                      image: image))
+                      image: image,
+                      onRemoveTagSelected: (t) => _galleryService.queueEditForImage(image, Edit(t, EditType.remove)),
+                  ))
             ],
           ),
         ),
