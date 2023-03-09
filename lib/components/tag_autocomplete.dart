@@ -9,8 +9,9 @@ class TagAutocomplete extends StatefulWidget {
   final Function(FocusNode)? onFocusNodeUpdated;
   final Iterable<String> Function(String) suggestionSearch;
   final String? hintText;
+  final bool autoRefocus;
 
-  const TagAutocomplete({super.key, this.onTagSelected, this.onFocusNodeUpdated, required this.suggestionSearch, this.hintText});
+  const TagAutocomplete({super.key, this.onTagSelected, this.onFocusNodeUpdated, required this.suggestionSearch, this.hintText, this.autoRefocus = true});
 
   @override
   State<StatefulWidget> createState() => _TagAutocompleteState();
@@ -19,6 +20,7 @@ class TagAutocomplete extends StatefulWidget {
 class _TagAutocompleteState extends State<TagAutocomplete> {
   late TextEditingController _tagTextController;
   bool _hasSuggestions = false;
+  FocusNode? _textFocus;
 
   _onTagSelected(String tag) async {
     final trimmed = tag.trim();
@@ -37,6 +39,7 @@ class _TagAutocompleteState extends State<TagAutocomplete> {
     return Autocomplete<String>(
       fieldViewBuilder: (context, fieldTextEditingController, FocusNode fieldFocusNode, VoidCallback onFieldSubmitted) {
         _tagTextController = fieldTextEditingController;
+        _textFocus = fieldFocusNode;
 
         final field = TextField(
           focusNode: fieldFocusNode,
@@ -49,6 +52,10 @@ class _TagAutocompleteState extends State<TagAutocomplete> {
               onFieldSubmitted();
             } else {
               _onTagSelected(s);
+            }
+
+            if (widget.autoRefocus && _textFocus != null) {
+              _textFocus!.requestFocus();
             }
           },
         );
