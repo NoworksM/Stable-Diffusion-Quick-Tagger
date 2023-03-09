@@ -1,30 +1,31 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:quick_tagger/data/cached_image.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/ioc.dart';
+import 'package:quick_tagger/services/image_service.dart';
 import 'package:quick_tagger/utils/collection_utils.dart';
 
-class GalleryImage extends StatefulWidget {
+class GalleryImage extends StatelessWidget {
   final TaggedImage image;
   final String? hoveredTag;
   final bool selected;
   final Function()? onSelected;
   final Function()? onTap;
+  final IImageService _imageService;
 
-  const GalleryImage({super.key, required this.image, this.hoveredTag, this.selected = false, this.onSelected, this.onTap});
+  GalleryImage({super.key, required this.image, this.hoveredTag, this.selected = false, this.onSelected, this.onTap})
+      : _imageService = getIt.get<IImageService>();
 
-  @override
-  State<StatefulWidget> createState() => _GalleryImageState();
-}
-
-class _GalleryImageState extends State<GalleryImage> {
   @override
   Widget build(BuildContext context) {
     late final BoxDecoration? decoration;
-    if (widget.hoveredTag != null && widget.image.tags.contains(widget.hoveredTag)) {
+    if (hoveredTag != null && image.tags.contains(hoveredTag)) {
       decoration = BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.secondary, width: 6));
-    } else if (widget.selected) {
+    } else if (selected) {
       decoration = BoxDecoration(border: Border.all(color: Theme.of(context).colorScheme.primaryContainer, width: 6));
     } else {
       decoration = null;
@@ -32,20 +33,42 @@ class _GalleryImageState extends State<GalleryImage> {
 
     return GestureDetector(
       onTap: () {
-        if (widget.onSelected != null &&
+        if (onSelected != null &&
             HardwareKeyboard.instance.logicalKeysPressed.containsAny([LogicalKeyboardKey.shift, LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight])) {
-          widget.onSelected?.call();
+          onSelected?.call();
         } else {
-          widget.onTap?.call();
+          onTap?.call();
         }
       },
-      onTertiaryTapUp: (_) => widget.onSelected?.call(),
+      onTertiaryTapUp: (_) => onSelected?.call(),
       child: SizedBox.square(
         dimension: 200,
         child: Stack(fit: StackFit.expand, children: [
-          Image.file(
-            File(widget.image.path),
-            fit: BoxFit.cover,
+          FutureBuilder<CachedImage>(
+            future: _imageService.loadImage(image),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              } else {
+                final smallest = min(snapshot.data!.width, snapshot.data!.height);
+
+                late int width;
+                late int height;
+                if (smallest > 300) {
+                  final scale = 300 / smallest.toDouble();
+                  width = (snapshot.data!.width * scale).toInt();
+                  height = (snapshot.data!.height * scale).toInt();
+                } else {
+                  width = snapshot.data!.width;
+                  height = snapshot.data!.height;
+                }
+
+                return Image(
+                  image: ResizeImage(snapshot.data!.image, width: width, height: height),
+                  fit: BoxFit.cover,
+                );
+              }
+            },
           ),
           Column(
             children: [
@@ -59,7 +82,7 @@ class _GalleryImageState extends State<GalleryImage> {
                     const Icon(Icons.sell),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                      child: Text('${widget.image.tags.length} Tags'),
+                      child: Text('${image.tags.length} Tags'),
                     ),
                   ],
                 )),
