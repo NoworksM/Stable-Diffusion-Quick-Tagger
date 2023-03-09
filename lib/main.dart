@@ -451,6 +451,58 @@ class _HomePageState extends State<HomePage> {
     await _galleryService.savePendingChanges();
   }
 
+  _onRemoveTagSelected(String tag) {
+    final pendingEdits = _galleryService.pendingEdits;
+
+    final added = List<FilePendingEdit>.empty(growable: true);
+    final removed = List<FilePendingEdit>.empty(growable: true);
+
+    final addEdit = Edit(tag, EditType.add);
+    final removeEdit = Edit(tag, EditType.remove);
+
+    for (final image in selectedImages) {
+      final imageEdits = pendingEdits[image.path] ?? UnmodifiableSetView(HashSet<Edit>());
+
+      final hasAdded = imageEdits.contains(addEdit);
+      final hasRemoved = imageEdits.contains(removeEdit);
+
+      if (hasAdded) {
+        removed.add(MapEntry(image.path, addEdit));
+      } else if (!hasRemoved && image.tags.contains(tag)) {
+        added.add(MapEntry(image.path, removeEdit));
+      }
+    }
+
+    _galleryService.queueFileEdits(added);
+    _galleryService.dequeueFileEdits(removed);
+  }
+
+  _onAddTagSelected(String tag) {
+    final pendingEdits = _galleryService.pendingEdits;
+
+    final added = List<FilePendingEdit>.empty(growable: true);
+    final removed = List<FilePendingEdit>.empty(growable: true);
+
+    final addEdit = Edit(tag, EditType.add);
+    final removeEdit = Edit(tag, EditType.remove);
+
+    for (final image in selectedImages) {
+      final imageEdits = pendingEdits[image.path] ?? UnmodifiableSetView(HashSet<Edit>());
+
+      final hasAdded = imageEdits.contains(addEdit);
+      final hasRemoved = imageEdits.contains(removeEdit);
+
+      if (hasRemoved) {
+        removed.add(MapEntry(image.path, removeEdit));
+      } else if (!hasAdded && !image.tags.contains(tag)) {
+        added.add(MapEntry(image.path, addEdit));
+      }
+    }
+
+    _galleryService.queueFileEdits(added);
+    _galleryService.dequeueFileEdits(removed);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -603,6 +655,7 @@ class _HomePageState extends State<HomePage> {
                       }),
                       onIncludedTagSelected: _onIncludedTagSelected,
                       onExcludedTagSelected: _onExcludedTagSelected,
+                      onRemoveTagSelected: _onRemoveTagSelected,
                     ),
                   ))
             ],
