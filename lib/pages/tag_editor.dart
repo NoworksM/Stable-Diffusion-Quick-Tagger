@@ -157,7 +157,6 @@ class _TagEditorState extends State<TagEditor> {
                     Flexible(
                         flex: 8,
                         child: Center(
-                          key: _galleryKey,
                           child: FutureBuilder<CachedImage>(
                             key: Key('imageView:${image.path}'),
                             future: _imageService.loadImage(image),
