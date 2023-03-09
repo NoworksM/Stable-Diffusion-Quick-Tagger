@@ -8,11 +8,13 @@ import 'package:quick_tagger/actions/save_tags.dart';
 import 'package:quick_tagger/components/gallery_image.dart';
 import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
+import 'package:quick_tagger/data/cached_image.dart';
 import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
+import 'package:quick_tagger/services/image_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
 
@@ -31,12 +33,15 @@ class TagEditor extends StatefulWidget {
 class _TagEditorState extends State<TagEditor> {
   late FocusNode _pageFocusNode;
   late FocusNode _textFocusNode;
-  late final ITagService _tagService;
   late final IGalleryService _galleryService;
+  late final IImageService _imageService;
+  late final ITagService _tagService;
   late final ScrollController _galleryController;
   int _index = 0;
   bool initialized = false;
   final GlobalKey _galleryKey = GlobalKey();
+  int? _width;
+  int? _height;
 
   List<TagCount> editedTags = List<TagCount>.empty(growable: true);
 
@@ -69,6 +74,7 @@ class _TagEditorState extends State<TagEditor> {
   void initState() {
     super.initState();
     _galleryService = getIt.get<IGalleryService>();
+    _imageService = getIt.get<IImageService>();
     _tagService = getIt.get<ITagService>();
 
     _pageFocusNode = FocusNode();
@@ -151,10 +157,29 @@ class _TagEditorState extends State<TagEditor> {
                     Flexible(
                         flex: 8,
                         child: Center(
-                            child: Image.file(
-                          File(image.path),
-                          fit: BoxFit.fitHeight,
-                        ))),
+                          key: _galleryKey,
+                          child: FutureBuilder<CachedImage>(
+                            key: Key('imageView:${image.path}'),
+                            future: _imageService.loadImage(image),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return const CircularProgressIndicator();
+                              } else {
+                                if (_width != null && _height != null) {
+                                  return Image(
+                                    image: ResizeImage(snapshot.data!.image, width: _width!, height: _height!),
+                                    fit: BoxFit.cover,
+                                  );
+                                } else {
+                                  return Image(
+                                    image: snapshot.data!.image,
+                                    fit: BoxFit.cover
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        )),
                     SizedBox(
                       height: imageSize,
                       child: ListView.builder(
@@ -178,15 +203,15 @@ class _TagEditorState extends State<TagEditor> {
               Flexible(
                   flex: 2,
                   child: TagSidebar(
-                    tagsStream: _galleryService.getTagStreamForImage(image)
-                        .asyncMap((d) => d.toList(growable: false))
-                        .asyncMap((d) => d.map((e) => TagCount(e, 1)).toList(growable: false)),
-                    initialTags: image.tags.map((e) => TagCount(e, 1)).toList(growable: false),
-                    initialPendingEditCounts: tag_utils.transformImageEditsToCounts(_galleryService.getPendingEditForImage(image)),
-                    pendingEditCountsStream: _galleryService.getPendingEditStreamForImage(image).asyncMap((d) => tag_utils.transformImageEditsToCounts(d)),
-                    imageCount: 1,
-                    image: image
-                  ))
+                      tagsStream: _galleryService
+                          .getTagStreamForImage(image)
+                          .asyncMap((d) => d.toList(growable: false))
+                          .asyncMap((d) => d.map((e) => TagCount(e, 1)).toList(growable: false)),
+                      initialTags: image.tags.map((e) => TagCount(e, 1)).toList(growable: false),
+                      initialPendingEditCounts: tag_utils.transformImageEditsToCounts(_galleryService.getPendingEditForImage(image)),
+                      pendingEditCountsStream: _galleryService.getPendingEditStreamForImage(image).asyncMap((d) => tag_utils.transformImageEditsToCounts(d)),
+                      imageCount: 1,
+                      image: image))
             ],
           ),
         ),

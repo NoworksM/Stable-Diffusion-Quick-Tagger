@@ -90,7 +90,7 @@ class GalleryImage extends StatelessWidget {
             ],
           ),
           AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
+            duration: const Duration(milliseconds: 500),
             curve: Curves.fastOutSlowIn,
             decoration: decoration,
           )
