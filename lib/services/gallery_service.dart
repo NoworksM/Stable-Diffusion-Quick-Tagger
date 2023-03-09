@@ -65,7 +65,7 @@ abstract class IGalleryService {
   void updateTagsForImage(TaggedImage image, Iterable<String> tags, {bool updateImageStream = true});
 
   /// Save changes for a single image from a set of edits
-  Future<bool> saveChanges(TaggedImage image, HashSet<Edit> edits);
+  Future<bool> saveChanges(TaggedImage image, HashSet<Edit> edits, {bool updateImageStream = true});
 
   /// Save changes for multiple images based on filenames and a set of edits
   Future<HashMap<String, HashSet<Edit>>> saveAllChanges(HashMap<String, HashSet<Edit>> edits);
@@ -100,11 +100,11 @@ class GalleryService implements IGalleryService {
   final HashMap<String, Stream<UnmodifiableSetView<String>>> _imageTagStreams = HashMap();
 
   GalleryService(this._tagService) {
-    _imageStream.transform(StreamTransformer.fromHandlers(handleData: (images, sink) {
+    _imageStream.listen((images) {
       for (final image in images) {
         _imageTagStreamControllers[image.path]?.add(UnmodifiableSetView(image.tags));
       }
-    }));
+    });
   }
 
   @override
@@ -168,7 +168,7 @@ class GalleryService implements IGalleryService {
   }
 
   @override
-  Future<bool> saveChanges(TaggedImage image, HashSet<Edit> edits) async {
+  Future<bool> saveChanges(TaggedImage image, HashSet<Edit> edits, {bool updateImageStream = false}) async {
     try {
       final updatedTags = HashSet<String>();
 
@@ -186,7 +186,7 @@ class GalleryService implements IGalleryService {
         }
       }
 
-      updateTagsForImage(image, updatedTags, updateImageStream: false);
+      updateTagsForImage(image, updatedTags, updateImageStream: updateImageStream);
 
       for (final tagFile in image.tagFiles) {
         await tag_utils.save(tagFile, updatedTags);
@@ -211,7 +211,7 @@ class GalleryService implements IGalleryService {
       try {
         final image = _images.firstWhere((i) => i.path == path);
 
-        if (!await saveChanges(image, edits)) {
+        if (!await saveChanges(image, edits, updateImageStream: false)) {
           unsaved[path] = edits;
         }
       } catch (_) {
@@ -366,7 +366,7 @@ class GalleryService implements IGalleryService {
   @override
   Future<void> saveImagePendingChanges(TaggedImage image) async {
     if (_pendingEdits.containsKey(image.path)) {
-      await saveChanges(image, _pendingEdits[image.path]!);
+      await saveChanges(image, _pendingEdits[image.path]!, updateImageStream: true);
       _pendingEdits.remove(image.path);
 
       _pendingEditsStreamController.add(pendingEdits);
