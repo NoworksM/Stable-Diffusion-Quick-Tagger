@@ -118,6 +118,14 @@ class _TagEditorState extends State<TagEditor> {
     _textFocusNode.requestFocus();
   }
 
+  _onCancelPendingTagAddition(String tag) {
+    _galleryService.dequeueEditForImage(image, Edit(tag, EditType.add));
+  }
+
+  _onCancelPendingTagRemoval(String tag) {
+    _galleryService.dequeueEditForImage(image, Edit(tag, EditType.remove));
+  }
+
   FutureOr<bool> onTagSelected(String tag) {
     onTagSubmitted(tag);
     return true;
@@ -212,6 +220,8 @@ class _TagEditorState extends State<TagEditor> {
                       imageCount: 1,
                       image: image,
                       onRemoveTagSelected: (t) => _galleryService.queueEditForImage(image, Edit(t, EditType.remove)),
+                    onCancelPendingTagAddition: _onCancelPendingTagAddition,
+                    onCancelPendingTagRemoval: _onCancelPendingTagRemoval,
                   ))
             ],
           ),
