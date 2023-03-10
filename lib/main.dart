@@ -503,6 +503,18 @@ class _HomePageState extends State<HomePage> {
     _galleryService.dequeueFileEdits(removed);
   }
 
+  _onCancelPendingTagAddition(String tag) {
+    final edit = Edit(tag, EditType.add);
+
+    _galleryService.dequeueEditForImages(selectedImages, edit);
+  }
+
+  _onCancelPendingTagRemoval(String tag) {
+    final edit = Edit(tag, EditType.remove);
+
+    _galleryService.dequeueEditForImages(selectedImages, edit);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -656,6 +668,8 @@ class _HomePageState extends State<HomePage> {
                       onIncludedTagSelected: _onIncludedTagSelected,
                       onExcludedTagSelected: _onExcludedTagSelected,
                       onRemoveTagSelected: _onRemoveTagSelected,
+                      onCancelPendingTagAddition: _onCancelPendingTagAddition,
+                      onCancelPendingTagRemoval: _onCancelPendingTagRemoval
                     ),
                   ))
             ],

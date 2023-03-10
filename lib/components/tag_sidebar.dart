@@ -22,27 +22,30 @@ class TagSidebar extends StatefulWidget {
   final Function(String)? onIncludedTagSelected;
   final Function(String)? onExcludedTagSelected;
   final Function(String)? onRemoveTagSelected;
+  final Function(String)? onCancelPendingTagAddition;
+  final Function(String)? onCancelPendingTagRemoval;
   final bool selectable;
   final int imageCount;
   final bool searchable;
   final TaggedImage? image;
 
-  const TagSidebar(
-      {super.key,
-      required this.tagsStream,
-      this.initialTags,
-      this.selectable = true,
-      this.searchable = true,
-      this.onTagHover,
-      required this.imageCount,
-      this.includedTags,
-      this.excludedTags,
-      this.initialPendingEditCounts,
-      required this.pendingEditCountsStream,
-      this.onIncludedTagSelected,
-      this.onExcludedTagSelected,
-      this.onRemoveTagSelected,
-      this.image});
+  const TagSidebar({super.key,
+    required this.tagsStream,
+    this.initialTags,
+    this.selectable = true,
+    this.searchable = true,
+    this.onTagHover,
+    required this.imageCount,
+    this.includedTags,
+    this.excludedTags,
+    this.initialPendingEditCounts,
+    required this.pendingEditCountsStream,
+    this.onIncludedTagSelected,
+    this.onExcludedTagSelected,
+    this.onRemoveTagSelected,
+    this.onCancelPendingTagAddition,
+    this.onCancelPendingTagRemoval,
+    this.image});
 
   @override
   State<TagSidebar> createState() => _TagSidebarState();
@@ -60,17 +63,25 @@ class _TagSidebarState extends State<TagSidebar> {
       Row(
         children: [
           IconButton(
-              onPressed: () => setState(() {
+              onPressed: () =>
+                  setState(() {
                     sort = TagSort.count;
                   }),
               icon: const Icon(Icons.sort),
-              color: sort == TagSort.count ? Theme.of(context).colorScheme.secondary : null),
+              color: sort == TagSort.count ? Theme
+                  .of(context)
+                  .colorScheme
+                  .secondary : null),
           IconButton(
-              onPressed: () => setState(() {
+              onPressed: () =>
+                  setState(() {
                     sort = TagSort.alphabetical;
                   }),
               icon: const Icon(Icons.sort_by_alpha),
-              color: sort == TagSort.alphabetical ? Theme.of(context).colorScheme.secondary : null),
+              color: sort == TagSort.alphabetical ? Theme
+                  .of(context)
+                  .colorScheme
+                  .secondary : null),
         ],
       ),
       StreamBuilder<TagGroupedCounts>(
@@ -82,11 +93,14 @@ class _TagSidebarState extends State<TagSidebar> {
               duration: const Duration(milliseconds: 500),
               child: (snapshot.data?.added.isNotEmpty ?? false) || (snapshot.data?.removed.isNotEmpty ?? false)
                   ? TagSidebarSection(
-                      title: 'Editing',
-                      positive: snapshot.data!.added,
-                      negative: snapshot.data!.removed,
-                      sort: sort,
-                    )
+                title: 'Editing',
+                positive: snapshot.data!.added,
+                negative: snapshot.data!.removed,
+                sort: sort,
+                selectable: true,
+                onPositiveSelected: widget.onCancelPendingTagAddition,
+                onNegativeSelected: widget.onCancelPendingTagRemoval,
+              )
                   : const SizedBox.shrink(),
             );
           }),
@@ -94,23 +108,24 @@ class _TagSidebarState extends State<TagSidebar> {
           duration: const Duration(milliseconds: 500),
           child: (widget.includedTags?.isNotEmpty ?? false) || (widget.excludedTags?.isNotEmpty ?? false)
               ? TagSidebarSection(
-                  title: 'Filtered',
-                  sort: sort,
-                  positive: widget.includedTags!.map((i) => TagCount(i, widget.imageCount)).toList(growable: false),
-                  negative: widget.excludedTags!.map((e) => TagCount(e, widget.imageCount)).toList(growable: false),
-                  onPositiveSelected: widget.onIncludedTagSelected,
-                  onNegativeSelected: widget.onExcludedTagSelected)
+              title: 'Filtered',
+              sort: sort,
+              positive: widget.includedTags!.map((i) => TagCount(i, widget.imageCount)).toList(growable: false),
+              negative: widget.excludedTags!.map((e) => TagCount(e, widget.imageCount)).toList(growable: false),
+              onPositiveSelected: widget.onIncludedTagSelected,
+              onNegativeSelected: widget.onExcludedTagSelected)
               : const SizedBox.shrink()),
       const TagSectionHeader(title: 'Tags'),
       AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
           child: widget.searchable
               ? TextFormField(
-                  onChanged: (v) => setState(() {
-                    _tagSearch = v;
-                  }),
-                  decoration: const InputDecoration(hintText: 'Filter tags'),
-                )
+            onChanged: (v) =>
+                setState(() {
+                  _tagSearch = v;
+                }),
+            decoration: const InputDecoration(hintText: 'Filter tags'),
+          )
               : const SizedBox.shrink()),
       Expanded(
         child: StreamBuilder<List<TagCount>>(
@@ -127,29 +142,30 @@ class _TagSidebarState extends State<TagSidebar> {
 
               sort == TagSort.count
                   ? filtered.sort((l, r) {
-                      final countCompare = l.count.compareTo(r.count) * -1;
+                final countCompare = l.count.compareTo(r.count) * -1;
 
-                      return countCompare == 0 ? l.tag.compareTo(r.tag) : countCompare;
-                    })
+                return countCompare == 0 ? l.tag.compareTo(r.tag) : countCompare;
+              })
                   : filtered.sort((l, r) => l.tag.compareTo(r.tag));
 
               return ListView.builder(
                 itemCount: filtered.length,
-                itemBuilder: (context, idx) => TagSidebarItem(
-                  tag: filtered[idx].tag,
-                  count: filtered[idx].count,
-                  selectable: widget.selectable,
-                  onHover: (t) => widget.onTagHover?.call(t),
-                  onInclude: (t) => widget.onIncludedTagSelected?.call(t),
-                  onExclude: (t) {
-                    if (widget.onRemoveTagSelected != null && HardwareKeyboard.instance.logicalKeysPressed
-                        .containsAny([LogicalKeyboardKey.shift, LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight])) {
-                      widget.onRemoveTagSelected!.call(t);
-                    } else {
-                      widget.onExcludedTagSelected?.call(t);
-                    }
-                  },
-                ),
+                itemBuilder: (context, idx) =>
+                    TagSidebarItem(
+                      tag: filtered[idx].tag,
+                      count: filtered[idx].count,
+                      selectable: widget.selectable,
+                      onHover: (t) => widget.onTagHover?.call(t),
+                      onInclude: (t) => widget.onIncludedTagSelected?.call(t),
+                      onExclude: (t) {
+                        if (widget.onRemoveTagSelected != null && HardwareKeyboard.instance.logicalKeysPressed
+                            .containsAny([LogicalKeyboardKey.shift, LogicalKeyboardKey.shiftLeft, LogicalKeyboardKey.shiftRight])) {
+                          widget.onRemoveTagSelected!.call(t);
+                        } else {
+                          widget.onExcludedTagSelected?.call(t);
+                        }
+                      },
+                    ),
               );
             }
           },
