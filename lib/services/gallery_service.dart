@@ -158,7 +158,7 @@ class GalleryService implements IGalleryService {
 
   @override
   void updateTagsForImage(TaggedImage image, Iterable<String> tags, {bool updateImageStream = true}) {
-    final index = _images.indexOf(image);
+    final index = _images.indexWhere((i) => i.path == image.path);
 
     if (index == -1) {
       return;
