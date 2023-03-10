@@ -6,6 +6,7 @@ import 'package:injectable/injectable.dart';
 import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/services/image_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as file_utils;
 import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
@@ -86,6 +87,7 @@ abstract class IGalleryService {
 @Singleton(as: IGalleryService)
 class GalleryService implements IGalleryService {
   final ITagService _tagService;
+  final IImageService _imageService;
 
   List<TaggedImage> _images = List.empty(growable: false);
   final StreamController<List<TaggedImage>> _imageStreamController = StreamController();
@@ -99,7 +101,7 @@ class GalleryService implements IGalleryService {
   final HashMap<String, StreamController<UnmodifiableSetView<String>>> _imageTagStreamControllers = HashMap();
   final HashMap<String, Stream<UnmodifiableSetView<String>>> _imageTagStreams = HashMap();
 
-  GalleryService(this._tagService) {
+  GalleryService(this._tagService, this._imageService) {
     _imageStream.listen((images) {
       for (final image in images) {
         _imageTagStreamControllers[image.path]?.add(UnmodifiableSetView(image.tags));
@@ -118,6 +120,8 @@ class GalleryService implements IGalleryService {
 
   @override
   Future<void> loadImages(String path) async {
+    _imageService.clearCache();
+
     final tags = HashSet<String>();
     final tagCounts = List<TagCount>.empty(growable: true);
 

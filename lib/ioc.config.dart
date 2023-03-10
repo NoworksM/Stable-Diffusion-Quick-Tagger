@@ -30,8 +30,10 @@ extension GetItInjectableX on _i1.GetIt {
     gh.singleton<_i3.IImageService>(_i3.ImageService());
     gh.singleton<_i4.ITagService>(_i4.TagService());
     gh.factoryAsync<_i5.SharedPreferences>(() => appModule.prefs);
-    gh.singleton<_i6.IGalleryService>(
-        _i6.GalleryService(gh<_i4.ITagService>()));
+    gh.singleton<_i6.IGalleryService>(_i6.GalleryService(
+      gh<_i4.ITagService>(),
+      gh<_i3.IImageService>(),
+    ));
     return this;
   }
 }
