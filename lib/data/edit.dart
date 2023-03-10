@@ -1,3 +1,4 @@
+/// Edit to hold info about a tag change and what operation it involved
 class Edit {
   final EditType type;
   final String value;

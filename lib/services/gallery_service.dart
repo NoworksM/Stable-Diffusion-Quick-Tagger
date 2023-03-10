@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:injectable/injectable.dart';
+import 'package:quick_tagger/data/change.dart';
 import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
@@ -82,6 +83,18 @@ abstract class IGalleryService {
 
   /// Get current tags for an image
   UnmodifiableSetView<String> getTagsForImage(TaggedImage image);
+
+  /// Undo the last change made
+  void undoLastChange();
+
+  /// Undo last change made to an image
+  void undoLastChangeForImage(TaggedImage image);
+
+  /// Redo last change made
+  void redoLastChange();
+
+  /// Redo last change made to an image
+  void redoLastChangeForImage(TaggedImage image);
 }
 
 @Singleton(as: IGalleryService)
@@ -100,6 +113,9 @@ class GalleryService implements IGalleryService {
 
   final HashMap<String, StreamController<UnmodifiableSetView<String>>> _imageTagStreamControllers = HashMap();
   final HashMap<String, Stream<UnmodifiableSetView<String>>> _imageTagStreams = HashMap();
+
+  final Queue<Change> _previousChanges = Queue<Change>();
+  final Queue<Change> _undoneChanges = Queue<Change>();
 
   GalleryService(this._tagService, this._imageService) {
     _imageStream.listen((images) {
@@ -386,5 +402,46 @@ class GalleryService implements IGalleryService {
     }
 
     return UnmodifiableSetView(HashSet<String>());
+  }
+
+  @override
+  void undoLastChange() {
+    if (_previousChanges.isEmpty) {
+      return;
+    }
+
+    final lastChange = _previousChanges.removeFirst();
+
+    _undoneChanges.add(lastChange);
+
+    throw UnimplementedError();
+  }
+
+  @override
+  void redoLastChange() {
+    if (_undoneChanges.isEmpty) {
+      return;
+    }
+
+    throw UnimplementedError();
+  }
+
+  @override
+  void redoLastChangeForImage(TaggedImage image) {
+    if (_previousChanges.isEmpty) {
+      return;
+    }
+
+    throw UnimplementedError();
+  }
+
+  @override
+  void undoLastChangeForImage(TaggedImage image) {
+    if (_undoneChanges.isEmpty) {
+      return;
+    }
+
+    // TODO: implement undoLastChangeForImage
+    throw UnimplementedError();
   }
 }
