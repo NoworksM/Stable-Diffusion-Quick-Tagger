@@ -92,7 +92,7 @@ class _HomePageState extends State<HomePage> {
   TagSeparator tagSeparator = TagSeparator.lineBreak;
   TagSpaceCharacter tagSpaceCharacter = TagSpaceCharacter.space;
   String? folder;
-  bool autoSaveTags = true;
+  bool autoSaveTags = false;
   List<TaggedImage> _images = List.empty();
   final StreamController<List<TaggedImage>> _imageStreamController = StreamController();
   late final Stream<List<TaggedImage>> _imageStream = _imageStreamController.stream.asBroadcastStream();
