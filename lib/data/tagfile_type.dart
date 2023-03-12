@@ -12,7 +12,7 @@ enum TagSpaceCharacter {
 }
 
 extension TagSeparatorExtensions on TagSeparator {
-  String userFriendly() {
+  String get userFriendly {
     switch (this) {
       case TagSeparator.comma:
         return ',';
@@ -36,7 +36,7 @@ extension TagSeparatorExtensions on TagSeparator {
 }
 
 extension TagSpaceCharacterExtensions on TagSpaceCharacter {
-  String userFriendly() {
+  String get userFriendly {
     switch (this) {
       case TagSpaceCharacter.space:
         return '(Space)';

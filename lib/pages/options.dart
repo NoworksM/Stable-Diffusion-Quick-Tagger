@@ -77,7 +77,7 @@ class Options extends StatelessWidget {
           items: TagSeparator.values
               .map((t) => DropdownMenuItem<TagSeparator>(
                     value: t,
-                    child: Text(t.userFriendly()),
+                    child: Text(t.userFriendly),
                   ))
               .toList(),
         ),
@@ -91,7 +91,7 @@ class Options extends StatelessWidget {
           items: TagSpaceCharacter.values
               .map((t) => DropdownMenuItem<TagSpaceCharacter>(
                     value: t,
-                    child: Text(t.userFriendly()),
+                    child: Text(t.userFriendly),
                   ))
               .toList(),
         ),
