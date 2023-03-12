@@ -3,7 +3,8 @@ final _toUnderscoreRegex = RegExp(r'\w+');
 
 enum TagSeparator {
   comma,
-  lineBreak
+  lineBreak,
+  carriageReturnLineBreak,
 }
 
 enum TagSpaceCharacter {
@@ -18,6 +19,8 @@ extension TagSeparatorExtensions on TagSeparator {
         return ',';
       case TagSeparator.lineBreak:
         return '(Line Break)';
+      case TagSeparator.carriageReturnLineBreak:
+        return '(Carriage Return + Line Break)';
       default:
         throw ArgumentError.value(this);
     }
@@ -28,6 +31,8 @@ extension TagSeparatorExtensions on TagSeparator {
       case TagSeparator.comma:
         return ',';
       case TagSeparator.lineBreak:
+        return '\n';
+      case TagSeparator.carriageReturnLineBreak:
         return '\r\n';
       default:
         throw ArgumentError.value(this);

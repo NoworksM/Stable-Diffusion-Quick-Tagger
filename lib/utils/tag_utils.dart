@@ -22,8 +22,10 @@ TagFile parseTags(String path, String tagFileContents) {
     if (char == ',' || char == '\n' || char == '\r' || char == '\r\n') {
       if (char == ',') {
         separator = TagSeparator.comma;
-      } else if (char == '\n' || char == '\r' || char == '\r\n') {
+      } else if (char == '\n') {
         separator = TagSeparator.lineBreak;
+      } else if (char == '\r\n') {
+        separator = TagSeparator.carriageReturnLineBreak;
       }
 
       if (builder.toString().trim().isNotEmpty) {
