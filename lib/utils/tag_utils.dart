@@ -19,17 +19,19 @@ TagFile parseTags(String path, String tagFileContents) {
   final builder = StringBuffer();
 
   for (final char in tagFileContents.characters) {
-    if (char == ',' || char == '\n') {
+    if (char == ',' || char == '\n' || char == '\r' || char == '\r\n') {
       if (char == ',') {
         separator = TagSeparator.comma;
-      } else if (char == '\n') {
+      } else if (char == '\n' || char == '\r' || char == '\r\n') {
         separator = TagSeparator.lineBreak;
       }
 
-      tags.add(builder.toString().trim());
-      builder.clear();
+      if (builder.toString().trim().isNotEmpty) {
+        tags.add(builder.toString().trim());
+        builder.clear();
+      }
     } else {
-      if (char == ' ') {
+      if (spaceCharacter == null && char == ' ') {
         spaceCharacter = TagSpaceCharacter.space;
       } else if (char == '_') {
         spaceCharacter = TagSpaceCharacter.underscore;
