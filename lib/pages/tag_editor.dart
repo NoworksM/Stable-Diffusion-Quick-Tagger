@@ -157,7 +157,7 @@ class _TagEditorState extends State<TagEditor> {
                       child: TagAutocomplete(
                         onTagSelected: onTagSelected,
                         onFocusNodeUpdated: (n) => _textFocusNode = n,
-                        suggestionSearch: _tagService.suggestedGlobalTags,
+                        suggestionSearch: _tagService.suggestedDatasetTags,
                         hintText: 'Add or remove tags',
                       ),
                     ),

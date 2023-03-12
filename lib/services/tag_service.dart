@@ -51,7 +51,7 @@ class TagService implements ITagService {
 
   @override
   void replaceDatasetTags(List<String> tags) {
-    datasetTrie = Trie(tags);
+    datasetTrie = globalTrie.cloneWith(tags);
   }
 
   @override

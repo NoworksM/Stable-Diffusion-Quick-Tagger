@@ -616,7 +616,7 @@ class _HomePageState extends State<HomePage> {
                           margin: const EdgeInsetsDirectional.symmetric(vertical: 8.0),
                           child: TagAutocomplete(
                             onTagSelected: _onTagSelected,
-                            suggestionSearch: _tagService.suggestedGlobalTags,
+                            suggestionSearch: _tagService.suggestedDatasetTags,
                             hintText: 'Add or remove tags'
                           ),
                         ),
