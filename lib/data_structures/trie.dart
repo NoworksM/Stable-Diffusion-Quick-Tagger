@@ -1,7 +1,9 @@
+import 'package:quick_tagger/utils/functional_utils.dart';
+
 class Trie {
   final bool radix;
-  String _value;
-  List<Trie> _children;
+  late String _value;
+  late List<Trie> _children;
 
   Trie(List<String> words, {bool radix = false}) : this.fromWords('', words, radix: radix);
 
@@ -70,19 +72,26 @@ class Trie {
         _children = <Trie>[];
 
   /// Create a Trie from entries/children for the new node
-  Trie.fromEntries(this._value, this._children, {this.radix = false});
+  Trie.fromEntries(this._value, this._children, {this.radix = false}) {
+    if (radix) {
+      _radixCompress();
+    }
+  }
 
   /// Create a Trie from a single word/trailing word
-  /// TODO: Finish implementing Trie.single
-  // Trie.single(String value, {this.radix = false}) {
-  //   if (radix) {
-  //     _value = value;
-  //     _children = <Trie>[];
-  //   } else {
-  //
-  //     for ()
-  //   }
-  // }
+  Trie.single(String value, {this.radix = false}) {
+    if (radix || value.isEmpty) {
+      _value = value;
+      _children = <Trie>[];
+    } else {
+      _value = value[0];
+      _children = <Trie>[Trie.single(value.substring(1), radix: radix)];
+    }
+
+    if (radix) {
+      _radixCompress();
+    }
+  }
 
   get value => _value;
 
@@ -139,29 +148,121 @@ class Trie {
 
   @override
   String toString() {
-    return 'Trie{_value: $_value, radix: $radix}';
+    return 'Trie{_value: $_value, radix: $radix, children: ${_children.length}';
   }
 
-  /// TODO: Finish implementing add and addAll
-// add(String value) {
-//   // Value already exists
-//   if (value == _value) {
-//     return;
-//   }
-//
-//   if (_children.isEmpty) {
-//       _children.add(Trie.single(value.substring(_value.length), radix));
-//       return;
-//   }
-//
-//   for (final child in _children) {
-//
-//   }
-// }
-//
-// _add(String value, String previous)
-//
-// addAll(Iterable<String> values) {
-//   throw UnimplementedError();
-// }
+  Trie clone() {
+    return Trie.fromEntries(_value, _children.map((t) => t.clone()).toList(), radix: radix);
+  }
+
+  Trie cloneWith(Iterable<String> words) {
+    final cloned = clone();
+
+    cloned.addAll(words);
+
+    return cloned;
+  }
+
+  add(String value) {
+    _add(value);
+    if (radix) {
+      _radixCompress();
+    }
+  }
+
+  _add(String value) {
+    // Value already exists
+    if (value == _value) {
+      return;
+    }
+
+    if (_children.isEmpty) {
+      _children.add(Trie.single(value.substring(_value.length), radix: radix));
+      return;
+    }
+
+    value = value.substring(_value.length);
+
+    int mdx = 0;
+    String mid = '';
+    int comparison = 0;
+    bool found = false;
+    for (int ldx = 0, udx = _children.length; ldx != udx;) {
+      mdx = (ldx + udx) ~/ 2;
+      mid = _children[mdx]._value;
+
+      comparison = value.substring(0, mid.length).compareTo(mid);
+
+      if (comparison == 0) {
+        found = true;
+        break;
+      }
+      if (comparison < 0) {
+        udx = mdx - 1;
+      }
+      if (comparison > 0) {
+        ldx = mdx + 1;
+      }
+    }
+
+    if (found) {
+      _children[mdx].add(value);
+    } else {
+      _children.insert(comparison > 0 ? mdx + 1 : mdx, Trie.single(value, radix: radix));
+    }
+  }
+
+  addAll(Iterable<String> values) {
+    final list = values.toList(growable: false);
+    list.sort();
+    _addAll(list);
+  }
+
+  _addAll(List<String> words) {
+    final newChildren = <MapEntry<int?, String>>[];
+
+    int wordIndex = 0;
+    for (int idx = 0; idx < _children.length; idx++) {
+      if (wordIndex == words.length) {
+        break;
+      }
+
+      final child = _children[idx];
+
+      final grandChildren = <String>[];
+
+      while (wordIndex < words.length && !words[wordIndex].startsWith(child._value)) {
+        newChildren.add(MapEntry(idx, words[wordIndex]));
+        wordIndex++;
+      }
+
+      while (wordIndex < words.length && words[wordIndex].startsWith(child._value)) {
+        grandChildren.add(words[wordIndex].substring(child._value.length));
+        wordIndex++;
+      }
+
+      child._addAll(grandChildren);
+    }
+
+    while (wordIndex < words.length) {
+      newChildren.add(MapEntry(null, words[wordIndex]));
+      wordIndex++;
+    }
+
+    if (newChildren.isEmpty) {
+      return;
+    }
+
+    int inserted = 0;
+    for (final grouping in newChildren.groupSortedBy((v) => MapEntry<int?, String>(v.key, v.value.isNotEmpty ? v.value.substring(0, 1) : ''))) {
+      final words = grouping.items.map((p) => p.value).map((w) => w.isNotEmpty ? w.substring(1) : '').toList();
+
+      if (grouping.key.key == null) {
+        _children.add(Trie.fromWords(grouping.key.value, words));
+      } else {
+        _children.insert(inserted, Trie.fromWords(grouping.key.value, words));
+        inserted++;
+      }
+    }
+  }
 }
