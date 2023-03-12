@@ -17,6 +17,7 @@ import 'package:quick_tagger/components/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
+import 'package:quick_tagger/utils/functional_utils.dart';
 import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -645,6 +646,7 @@ class _HomePageState extends State<HomePage> {
                             onClearSelection: () => setState(() {
                               _selectedImagePaths.clear();
                             }),
+                            totalTags: _images.map((e) => e.tagFiles).flatten().map((i) => i.tags.length).reduce((v, e) => v + e),
                           ),
                         ),
                       ],
