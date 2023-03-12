@@ -1,5 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:quick_tagger/components/section_header.dart';
+import 'package:quick_tagger/components/utilities_section.dart';
 
 import '../data/tagfile_type.dart';
 
@@ -35,6 +37,7 @@ class Options extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(children: [
+      const SectionHeader(title: 'Options'),
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
         child: Row(
@@ -96,6 +99,8 @@ class Options extends StatelessWidget {
               .toList(),
         ),
       ),
+      const Spacer(),
+      const UtilitiesSection()
     ]);
   }
 }
