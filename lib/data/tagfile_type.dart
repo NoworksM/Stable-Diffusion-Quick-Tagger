@@ -1,3 +1,5 @@
+import 'package:path/path.dart' as p;
+
 final _toSpacesRegex = RegExp(r'_+');
 final _toUnderscoreRegex = RegExp(r'\w+');
 
@@ -26,7 +28,7 @@ extension TagSeparatorExtensions on TagSeparator {
     }
   }
 
-  String value() {
+  String get value {
     switch (this) {
       case TagSeparator.comma:
         return ',';
@@ -52,7 +54,7 @@ extension TagSpaceCharacterExtensions on TagSpaceCharacter {
     }
   }
 
-  String value() {
+  String get value {
     switch (this) {
       case TagSpaceCharacter.space:
         return ' ';
@@ -64,9 +66,9 @@ extension TagSpaceCharacterExtensions on TagSpaceCharacter {
   String format(String tag) {
     switch (this) {
       case TagSpaceCharacter.space:
-        return tag.replaceAll(_toSpacesRegex, value());
+        return tag.replaceAll(_toSpacesRegex, value);
       case TagSpaceCharacter.underscore:
-        return tag.replaceAll(_toUnderscoreRegex, value());
+        return tag.replaceAll(_toUnderscoreRegex, value);
     }
   }
 }
@@ -76,6 +78,30 @@ class TagType {
   final TagSpaceCharacter spaceCharacter;
 
   TagType(this.separator, this.spaceCharacter);
+}
+
+enum TagPathFormat {
+  addTxt,
+  replaceExtension
+}
+
+_buildTagFilePathAddTxt(String path) {
+  return '$path.txt';
+}
+
+_buildTagFilePathReplaceExtension(String path) {
+  return p.join(p.dirname(path), '${p.basenameWithoutExtension(path)}.txt');
+}
+
+extension TagPathFormatExtensions on TagPathFormat{
+  String buildTagFilePathFromImagePath(String path) {
+    switch (this) {
+      case TagPathFormat.addTxt:
+        return _buildTagFilePathAddTxt(path);
+      case TagPathFormat.replaceExtension:
+        return _buildTagFilePathReplaceExtension(path);
+    }
+  }
 }
 
 class TagFile {

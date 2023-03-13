@@ -112,7 +112,7 @@ Future<void> save(TagFile tagFile, Iterable<String> tags) async {
     builder.write(tagFile.spaceCharacter.format(tag));
 
     if (idx < tags.length - 1) {
-      builder.write(tagFile.separator.value());
+      builder.write(tagFile.separator.value);
     }
   }
 

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:injectable/injectable.dart';
 import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
+import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/services/image_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
@@ -82,6 +83,9 @@ abstract class IGalleryService {
 
   /// Get current tags for an image
   UnmodifiableSetView<String> getTagsForImage(TaggedImage image);
+
+  Future<void> convertTagFiles(TagSeparator separator, TagSpaceCharacter spaceCharacter, TagPathFormat pathFormat,
+      {List<TaggedImage>? images, bool deleteOld = true});
 }
 
 @Singleton(as: IGalleryService)
@@ -325,15 +329,17 @@ class GalleryService implements IGalleryService {
 
   @override
   Stream<UnmodifiableSetView<Edit>> getPendingEditStreamForImage(TaggedImage image) {
-    return _pendingImageEditsStreams.putIfAbsent(image.path, () => _pendingEditsStream.transform<PendingEdit>(StreamTransformer<PendingEdits, PendingEdit>.fromHandlers(handleData: (data, sink) {
-      final imageEdits = data[image.path];
+    return _pendingImageEditsStreams.putIfAbsent(
+        image.path,
+        () => _pendingEditsStream.transform<PendingEdit>(StreamTransformer<PendingEdits, PendingEdit>.fromHandlers(handleData: (data, sink) {
+              final imageEdits = data[image.path];
 
-      if (imageEdits == null) {
-        sink.add(UnmodifiableSetView(HashSet<Edit>()));
-      } else {
-        sink.add(imageEdits);
-      }
-    })));
+              if (imageEdits == null) {
+                sink.add(UnmodifiableSetView(HashSet<Edit>()));
+              } else {
+                sink.add(imageEdits);
+              }
+            })));
   }
 
   @override
@@ -386,5 +392,49 @@ class GalleryService implements IGalleryService {
     }
 
     return UnmodifiableSetView(HashSet<String>());
+  }
+
+  _convertTagFileForImageIndex(int index, TagSeparator separator, TagSpaceCharacter spaceCharacter, TagPathFormat pathFormat, bool deleteOld) async {
+    final image = _images[index];
+
+    final newTagFile = TagFile(pathFormat.buildTagFilePathFromImagePath(image.path), image.tags.toList(), separator, spaceCharacter);
+    final tagFiles = List<TagFile>.empty(growable: true);
+    tagFiles.add(newTagFile);
+
+    if (!deleteOld) {
+      tagFiles.addAll(image.tagFiles.where((f) => f.path != newTagFile.path));
+    }
+
+    await tag_utils.save(newTagFile, image.tags);
+    _images[index] = TaggedImage(image.path, image.tags, tagFiles);
+
+    if (deleteOld) {
+      for (final tagFile in image.tagFiles) {
+        if (tagFile.path == newTagFile.path) {
+          continue;
+        }
+
+        await File(tagFile.path).delete();
+      }
+    }
+
+    _imageStreamController.add(_images);
+  }
+
+  @override
+  Future<void> convertTagFiles(TagSeparator separator, TagSpaceCharacter spaceCharacter, TagPathFormat pathFormat,
+      {List<TaggedImage>? images, bool deleteOld = true}) async {
+    if (images == null) {
+      for (int idx = 0; idx < _images.length; idx++) {
+        await _convertTagFileForImageIndex(idx, separator, spaceCharacter, pathFormat, deleteOld);
+      }
+    } else {
+      for (final image in images) {
+        int index = _images.indexWhere((i) => i.path == image.path);
+        if (index != -1) {
+          await _convertTagFileForImageIndex(index, separator, spaceCharacter, pathFormat, deleteOld);
+        }
+      }
+    }
   }
 }
