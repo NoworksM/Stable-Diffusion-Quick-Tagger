@@ -19,17 +19,21 @@ TagFile parseTags(String path, String tagFileContents) {
   final builder = StringBuffer();
 
   for (final char in tagFileContents.characters) {
-    if (char == ',' || char == '\n') {
+    if (char == ',' || char == '\n' || char == '\r' || char == '\r\n') {
       if (char == ',') {
         separator = TagSeparator.comma;
       } else if (char == '\n') {
         separator = TagSeparator.lineBreak;
+      } else if (char == '\r\n') {
+        separator = TagSeparator.carriageReturnLineBreak;
       }
 
-      tags.add(builder.toString().trim());
-      builder.clear();
+      if (builder.toString().trim().isNotEmpty) {
+        tags.add(builder.toString().trim());
+        builder.clear();
+      }
     } else {
-      if (char == ' ') {
+      if (spaceCharacter == null && char == ' ') {
         spaceCharacter = TagSpaceCharacter.space;
       } else if (char == '_') {
         spaceCharacter = TagSpaceCharacter.underscore;
@@ -108,7 +112,7 @@ Future<void> save(TagFile tagFile, Iterable<String> tags) async {
     builder.write(tagFile.spaceCharacter.format(tag));
 
     if (idx < tags.length - 1) {
-      builder.write(tagFile.separator.value());
+      builder.write(tagFile.separator.value);
     }
   }
 

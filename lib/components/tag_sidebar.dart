@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:quick_tagger/components/tag_section_header.dart';
+import 'package:quick_tagger/components/section_header.dart';
 import 'package:quick_tagger/components/tag_sidebar_item.dart';
 import 'package:quick_tagger/components/tag_sidebar_section.dart';
 import 'package:quick_tagger/data/tag_count.dart';
@@ -115,7 +115,7 @@ class _TagSidebarState extends State<TagSidebar> {
               onPositiveSelected: widget.onIncludedTagSelected,
               onNegativeSelected: widget.onExcludedTagSelected)
               : const SizedBox.shrink()),
-      const TagSectionHeader(title: 'Tags'),
+      const SectionHeader(title: 'Tags'),
       AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
           child: widget.searchable

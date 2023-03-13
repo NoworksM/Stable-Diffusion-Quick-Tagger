@@ -5,9 +5,17 @@ class ImageCountFooter extends StatelessWidget {
   final int filtered;
   final int selected;
   final int filteredTags;
+  final int totalTags;
   final Function()? onClearSelection;
 
-  const ImageCountFooter({super.key, required this.images, required this.filtered, required this.selected, required this.filteredTags, this.onClearSelection});
+  const ImageCountFooter(
+      {super.key,
+      required this.images,
+      required this.filtered,
+      required this.selected,
+      required this.filteredTags,
+      required this.totalTags,
+      this.onClearSelection});
 
   @override
   Widget build(BuildContext context) {
@@ -40,17 +48,34 @@ class ImageCountFooter extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text('$selected Selected out of $images Images'),
+            child: Text(
+              '$selected Selected out of $images Images',
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       );
     } else {
-      textDisplay = Text('$images Images');
+      textDisplay = Text(
+        '$images Images',
+        style: Theme.of(context).textTheme.titleMedium,
+        textAlign: TextAlign.center,
+      );
     }
 
     return Row(
       children: [
-        const Spacer(flex: 1),
+        Flexible(
+            flex: 1,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '$images/${filtered != images ? filtered : 0}/${selected != images && selected != filtered ? selected : 0}',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+            )),
         Expanded(
           flex: 5,
           child: Center(child: textDisplay),
@@ -58,8 +83,18 @@ class ImageCountFooter extends StatelessWidget {
         Flexible(
             flex: 1,
             child: Align(
-                alignment: Alignment.centerRight,
-                child: Text('${selected != images && selected != filtered ? selected : 0}/${filtered != images ? filtered : 0}/$images')))
+              alignment: Alignment.centerRight,
+              child: Row(
+                children: [
+                  const Spacer(),
+                  const Icon(Icons.sell),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4.0),
+                    child: Text(totalTags.toString(), style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center,),
+                  ),
+                ],
+              ),
+            )),
       ],
     );
   }
