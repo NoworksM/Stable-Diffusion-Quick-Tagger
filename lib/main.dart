@@ -92,6 +92,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TagSeparator tagSeparator = TagSeparator.lineBreak;
   TagSpaceCharacter tagSpaceCharacter = TagSpaceCharacter.space;
+  TagPathFormat tagPathFormat = TagPathFormat.replaceExtension;
   String? folder;
   bool autoSaveTags = false;
   List<TaggedImage> _images = List.empty();
@@ -592,6 +593,7 @@ class _HomePageState extends State<HomePage> {
                   child: Options(
                     tagSeparator: tagSeparator,
                     tagSpaceCharacter: tagSpaceCharacter,
+                    tagPathFormat: tagPathFormat,
                     autoSaveTags: autoSaveTags,
                     folder: folder,
                     onFolderChanged: onPathChanged,
@@ -600,6 +602,9 @@ class _HomePageState extends State<HomePage> {
                     }),
                     onTagSpaceCharacterChanged: (val) => setState(() {
                       tagSpaceCharacter = val ?? tagSpaceCharacter;
+                    }),
+                    onTagPathFormatChanged: (val) => setState(() {
+                      tagPathFormat = val ?? tagPathFormat;
                     }),
                     onAutoSaveTagsChanged: (val) => setState(() {
                       autoSaveTags = val ?? autoSaveTags;

@@ -102,6 +102,15 @@ extension TagPathFormatExtensions on TagPathFormat{
         return _buildTagFilePathReplaceExtension(path);
     }
   }
+
+  String get userFriendly {
+    switch (this) {
+      case TagPathFormat.addTxt:
+        return 'append .txt';
+      case TagPathFormat.replaceExtension:
+        return 'replace extension with .txt';
+    }
+  }
 }
 
 class TagFile {

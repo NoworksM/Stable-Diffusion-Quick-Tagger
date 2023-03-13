@@ -2,16 +2,17 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:quick_tagger/components/section_header.dart';
 import 'package:quick_tagger/components/utilities_section.dart';
-
-import '../data/tagfile_type.dart';
+import 'package:quick_tagger/data/tagfile_type.dart';
 
 class Options extends StatelessWidget {
   final TagSpaceCharacter tagSpaceCharacter;
   final TagSeparator tagSeparator;
+  final TagPathFormat tagPathFormat;
   final String? folder;
   final Function(String)? onFolderChanged;
   final Function(TagSpaceCharacter?)? onTagSpaceCharacterChanged;
   final Function(TagSeparator?)? onTagSeparatorChanged;
+  final Function(TagPathFormat?)? onTagPathFormatChanged;
   final Function(bool?)? onAutoSaveTagsChanged;
   final bool autoSaveTags;
 
@@ -19,11 +20,13 @@ class Options extends StatelessWidget {
       {super.key,
       required this.tagSpaceCharacter,
       required this.tagSeparator,
+      required this.tagPathFormat,
       required this.autoSaveTags,
       this.folder,
       this.onFolderChanged,
       this.onTagSpaceCharacterChanged,
       this.onTagSeparatorChanged,
+      this.onTagPathFormatChanged,
       this.onAutoSaveTagsChanged});
 
   Future<void> selectFolder() async {
@@ -99,8 +102,22 @@ class Options extends StatelessWidget {
               .toList(),
         ),
       ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+        child: DropdownButtonFormField<TagPathFormat>(
+          decoration: const InputDecoration(labelText: 'Tag Path Format'),
+          value: tagPathFormat,
+          onChanged: (t) => onTagPathFormatChanged?.call(t),
+          items: TagPathFormat.values
+              .map((t) => DropdownMenuItem<TagPathFormat>(
+            value: t,
+            child: Text(t.userFriendly),
+          ))
+              .toList(),
+        ),
+      ),
       const Spacer(),
-      const UtilitiesSection()
+      UtilitiesSection(tagPathFormat: tagPathFormat, separator: tagSeparator, spaceCharacter: tagSpaceCharacter)
     ]);
   }
 }
