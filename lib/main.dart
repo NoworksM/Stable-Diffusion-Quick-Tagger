@@ -651,7 +651,7 @@ class _HomePageState extends State<HomePage> {
                             onClearSelection: () => setState(() {
                               _selectedImagePaths.clear();
                             }),
-                            totalTags: _images.map((e) => e.tagFiles).flatten().map((i) => i.tags.length).reduce((v, e) => v + e),
+                            totalTags: _images.isNotEmpty ? _images.map((e) => e.tagFiles).flatten().map((i) => i.tags.length).reduce((v, e) => v + e) : 0,
                           ),
                         ),
                       ],

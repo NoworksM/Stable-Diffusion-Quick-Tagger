@@ -29,7 +29,7 @@ void main() {
       final tagFile = tutils.parseTags('', _spaceAndCarriageReturnedLineBreakExample);
 
       expect(tagFile.path, equals(''));
-      expect(tagFile.separator, equals(TagSeparator.lineBreak));
+      expect(tagFile.separator, equals(TagSeparator.carriageReturnLineBreak));
       expect(tagFile.spaceCharacter, equals(TagSpaceCharacter.space));
       expect(tagFile.tags, equals(['1girl', 'solo', 'hands up', 'waving']));
     });
@@ -62,7 +62,7 @@ void main() {
       final tagFile = tutils.parseTags('', _underscoreAndCarriageReturnedLineBreakExample);
 
       expect(tagFile.path, equals(''));
-      expect(tagFile.separator, equals(TagSeparator.lineBreak));
+      expect(tagFile.separator, equals(TagSeparator.carriageReturnLineBreak));
       expect(tagFile.spaceCharacter, equals(TagSpaceCharacter.underscore));
       expect(tagFile.tags, equals(['1girl', 'solo', 'hands_up', 'waving']));
     });
