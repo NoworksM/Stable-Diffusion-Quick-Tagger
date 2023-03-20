@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quick_tagger/components/tag_section_header.dart';
+import 'package:quick_tagger/components/section_header.dart';
 import 'package:quick_tagger/components/tag_sidebar_item.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tag_sort.dart';
@@ -21,7 +21,7 @@ class TagSidebarSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final children = List<Widget>.empty(growable: true);
 
-    children.add(TagSectionHeader(title: title));
+    children.add(SectionHeader(title: title));
 
     if (positive != null) {
       for (final tagCount in positive!) {

@@ -1,9 +1,12 @@
+import 'package:path/path.dart' as p;
+
 final _toSpacesRegex = RegExp(r'_+');
 final _toUnderscoreRegex = RegExp(r'\w+');
 
 enum TagSeparator {
   comma,
-  lineBreak
+  lineBreak,
+  carriageReturnLineBreak,
 }
 
 enum TagSpaceCharacter {
@@ -12,22 +15,26 @@ enum TagSpaceCharacter {
 }
 
 extension TagSeparatorExtensions on TagSeparator {
-  String userFriendly() {
+  String get userFriendly {
     switch (this) {
       case TagSeparator.comma:
         return ',';
       case TagSeparator.lineBreak:
         return '(Line Break)';
+      case TagSeparator.carriageReturnLineBreak:
+        return '(Carriage Return + Line Break)';
       default:
         throw ArgumentError.value(this);
     }
   }
 
-  String value() {
+  String get value {
     switch (this) {
       case TagSeparator.comma:
         return ',';
       case TagSeparator.lineBreak:
+        return '\n';
+      case TagSeparator.carriageReturnLineBreak:
         return '\r\n';
       default:
         throw ArgumentError.value(this);
@@ -36,7 +43,7 @@ extension TagSeparatorExtensions on TagSeparator {
 }
 
 extension TagSpaceCharacterExtensions on TagSpaceCharacter {
-  String userFriendly() {
+  String get userFriendly {
     switch (this) {
       case TagSpaceCharacter.space:
         return '(Space)';
@@ -47,7 +54,7 @@ extension TagSpaceCharacterExtensions on TagSpaceCharacter {
     }
   }
 
-  String value() {
+  String get value {
     switch (this) {
       case TagSpaceCharacter.space:
         return ' ';
@@ -59,9 +66,9 @@ extension TagSpaceCharacterExtensions on TagSpaceCharacter {
   String format(String tag) {
     switch (this) {
       case TagSpaceCharacter.space:
-        return tag.replaceAll(_toSpacesRegex, value());
+        return tag.replaceAll(_toSpacesRegex, value);
       case TagSpaceCharacter.underscore:
-        return tag.replaceAll(_toUnderscoreRegex, value());
+        return tag.replaceAll(_toUnderscoreRegex, value);
     }
   }
 }
@@ -71,6 +78,39 @@ class TagType {
   final TagSpaceCharacter spaceCharacter;
 
   TagType(this.separator, this.spaceCharacter);
+}
+
+enum TagPathFormat {
+  addTxt,
+  replaceExtension
+}
+
+_buildTagFilePathAddTxt(String path) {
+  return '$path.txt';
+}
+
+_buildTagFilePathReplaceExtension(String path) {
+  return p.join(p.dirname(path), '${p.basenameWithoutExtension(path)}.txt');
+}
+
+extension TagPathFormatExtensions on TagPathFormat{
+  String buildTagFilePathFromImagePath(String path) {
+    switch (this) {
+      case TagPathFormat.addTxt:
+        return _buildTagFilePathAddTxt(path);
+      case TagPathFormat.replaceExtension:
+        return _buildTagFilePathReplaceExtension(path);
+    }
+  }
+
+  String get userFriendly {
+    switch (this) {
+      case TagPathFormat.addTxt:
+        return 'append .txt';
+      case TagPathFormat.replaceExtension:
+        return 'replace extension with .txt';
+    }
+  }
 }
 
 class TagFile {

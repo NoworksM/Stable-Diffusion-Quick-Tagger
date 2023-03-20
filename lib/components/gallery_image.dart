@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:quick_tagger/data/cached_image.dart';
+import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/services/image_service.dart';
@@ -83,6 +84,18 @@ class GalleryImage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                       child: Text('${image.tags.length} Tags'),
                     ),
+                    const Spacer(),
+                    Tooltip(
+                        message: image.tagFiles.map((f) => '${f.spaceCharacter.userFriendly}, ${f.separator.userFriendly}').join('\n'),
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: Text('${image.tagFiles.length}'),
+                            ),
+                            const Icon(Icons.description),
+                          ],
+                        )),
                   ],
                 )),
               ),
