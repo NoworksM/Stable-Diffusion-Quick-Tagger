@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:injectable/injectable.dart';
+import 'package:quick_tagger/data/directory_info.dart';
 import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
@@ -11,6 +12,8 @@ import 'package:quick_tagger/services/image_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
 import 'package:quick_tagger/utils/file_utils.dart' as file_utils;
 import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
+
+import '../data_structures/tuple.dart';
 
 typedef PendingEdit = UnmodifiableSetView<Edit>;
 typedef PendingEdits = UnmodifiableMapView<String, PendingEdit>;
@@ -26,6 +29,10 @@ abstract class IGalleryService {
   Stream<PendingEdits> get pendingEditsStream;
 
   PendingEdits get pendingEdits;
+
+  Stream<DirectoryInfo> get directoryInfoStream;
+
+  DirectoryInfo? get directoryInfo;
 
   /// Get pending edits for an image
   PendingEdit getPendingEditForImage(TaggedImage image);
@@ -88,6 +95,10 @@ abstract class IGalleryService {
       {List<TaggedImage>? images, bool deleteOld = true});
 }
 
+typedef _ImageDirectoryResults = Pair<List<TaggedImage>, List<TagCount>>;
+
+final _loraRepeatFolderSyntax = RegExp(r'^(\d+)_.*$');
+
 @Singleton(as: IGalleryService)
 class GalleryService implements IGalleryService {
   final ITagService _tagService;
@@ -96,6 +107,10 @@ class GalleryService implements IGalleryService {
   List<TaggedImage> _images = List.empty(growable: false);
   final StreamController<List<TaggedImage>> _imageStreamController = StreamController();
   late final Stream<List<TaggedImage>> _imageStream = _imageStreamController.stream.asBroadcastStream();
+
+  DirectoryInfo? _directoryInfo;
+  final StreamController<DirectoryInfo> _directoryInfoStreamController = StreamController();
+  late final Stream<DirectoryInfo> _directoryInfoStream = _directoryInfoStreamController.stream.asBroadcastStream();
 
   final HashMap<String, HashSet<Edit>> _pendingEdits = HashMap<String, HashSet<Edit>>();
   final StreamController<PendingEdits> _pendingEditsStreamController = StreamController<PendingEdits>();
@@ -125,12 +140,14 @@ class GalleryService implements IGalleryService {
   @override
   Future<void> loadImages(String path) async {
     _imageService.clearCache();
+  }
 
+  Future<_ImageDirectoryResults> _loadImagesForDirectory(DirectoryInfo directory) async {
     final tags = HashSet<String>();
     final tagCounts = List<TagCount>.empty(growable: true);
 
     final newImages = List<TaggedImage>.empty(growable: true);
-    await for (final file in Directory(path).list()) {
+    await for (final file in Directory(directory.path).list()) {
       if (file_utils.isSupportedFile(file.path)) {
         final fileTagInfo = await tag_utils.getTagsForFile(file.path);
 
@@ -437,4 +454,10 @@ class GalleryService implements IGalleryService {
       }
     }
   }
+
+  @override
+  DirectoryInfo? get directoryInfo => _directoryInfo;
+
+  @override
+  Stream<DirectoryInfo> get directoryInfoStream => _directoryInfoStream;
 }
