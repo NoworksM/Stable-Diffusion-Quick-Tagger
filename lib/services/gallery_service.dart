@@ -140,9 +140,78 @@ class GalleryService implements IGalleryService {
   @override
   Future<void> loadImages(String path) async {
     _imageService.clearCache();
+    final directory = Directory(path);
+
+    _images = List.empty(growable: true);
+    _imageStreamController.add(_images);
+
+    final List<TaggedImage> images = List.empty(growable: true);
+    var tagCounts = List<TagCount>.empty(growable: true);
+
+    final imageLoadStreamController = StreamController<TaggedImage>();
+    final tagCountLoadStreamController = StreamController<List<TagCount>>();
+
+    imageLoadStreamController.stream.listen((i) {
+      images.add(i);
+      _images = UnmodifiableListView(images);
+      _imageStreamController.add(_images);
+    });
+
+    tagCountLoadStreamController.stream.listen((tc) {
+      tagCounts = tag_utils.mergeTagCounts(tagCounts, tc);
+      _tagService.replaceTagCounts(tagCounts);
+    });
+
+    final subDirs = await directory
+        .list()
+        .where((i) => i is Directory)
+        .map((i) => i as Directory)
+        .asyncMap((d) => _loadDirectoryInfo(d, imageStreamController: imageLoadStreamController, tagCountsStreamController: tagCountLoadStreamController))
+        .toList();
+
+    final type = subDirs.isNotEmpty && subDirs.every((d) => d.type == DirectoryType.loraRepeat && d.subDirectories.isEmpty) ? DirectoryType.lora : DirectoryType.normal;
+
+    final rootImages = await _loadImagesForDirectory(directory);
+
+    _images.addAll(rootImages.first);
+    tagCounts = tag_utils.mergeTagCounts(tagCounts, rootImages.second);
+
+    _imageStreamController.add(_images);
+    _tagService.replaceTagCounts(tagCounts);
+
+    _directoryInfo = DirectoryInfo(directory.path, type, subDirs, rootImages.first);
+    _directoryInfoStreamController.add(_directoryInfo!);
   }
 
-  Future<_ImageDirectoryResults> _loadImagesForDirectory(DirectoryInfo directory) async {
+  /// Get directory info for a directory and it's subdirectories
+  FutureOr<DirectoryInfo> _loadDirectoryInfo(Directory directory,
+      {StreamController<TaggedImage>? imageStreamController, StreamController<List<TagCount>>? tagCountsStreamController}) async {
+    late final DirectoryType directoryType;
+    late final int? repeats;
+
+    final match = _loraRepeatFolderSyntax.matchAsPrefix(directory.path);
+
+    if (match != null) {
+      directoryType = DirectoryType.loraRepeat;
+      repeats = int.parse(match.group(1)!);
+    } else {
+      directoryType = DirectoryType.normal;
+      repeats = null;
+    }
+
+    final subDirs = await directory
+        .list()
+        .where((i) => i is Directory)
+        .map((i) => i as Directory)
+        .asyncMap((d) => _loadDirectoryInfo(d, imageStreamController: imageStreamController, tagCountsStreamController: tagCountsStreamController))
+        .toList();
+
+    final images = await _loadImagesForDirectory(directory, imageStreamController: imageStreamController, tagCountsStreamController: tagCountsStreamController);
+
+    return DirectoryInfo(directory.path, directoryType, subDirs, images.first, repeats: repeats);
+  }
+
+  Future<_ImageDirectoryResults> _loadImagesForDirectory(Directory directory, {StreamController<TaggedImage>? imageStreamController, StreamController<List<TagCount>>? tagCountsStreamController}) async {
     final tags = HashSet<String>();
     final tagCounts = List<TagCount>.empty(growable: true);
 
@@ -162,16 +231,16 @@ class GalleryService implements IGalleryService {
           tagCount.count++;
         }
 
-        newImages.add(TaggedImage.file(file.path, fileTagInfo));
+        final image = TaggedImage.file(file.path, fileTagInfo);
 
-        _imageStreamController.add(newImages);
-        _tagService.replaceTagCounts(tagCounts);
+        newImages.add(image);
+
+        imageStreamController?.add(image);
+        tagCountsStreamController?.add(tagCounts);
       }
     }
 
-    _tagService.replaceDatasetTags(tags.toList(growable: false));
-
-    _images = newImages;
+    return Pair(newImages, tagCounts);
   }
 
   @override

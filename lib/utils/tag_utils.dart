@@ -227,3 +227,19 @@ transformImageEditsToCounts(PendingEdit? imageEdits) {
 
   return TagGroupedCounts(added.values.toList(), removed.values.toList());
 }
+
+mergeTagCounts(List<TagCount> first, List<TagCount> second) {
+  final merged = HashMap<String, TagCount>.identity();
+
+  for (final count in first) {
+    merged[count.tag] = count;
+  }
+
+  for (final count in second) {
+    final existing = merged.putIfAbsent(count.tag, () => TagCount(count.tag, 0));
+
+    existing.count += count.count;
+  }
+
+  return merged.values.toList();
+}
