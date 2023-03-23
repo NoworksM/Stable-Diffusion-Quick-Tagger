@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:quick_tagger/components/image_count_footer.dart';
 import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
 import 'package:quick_tagger/data/directory_info.dart';
@@ -15,7 +14,6 @@ import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
-import 'package:quick_tagger/components/gallery.dart';
 import 'package:quick_tagger/pages/options.dart';
 import 'package:quick_tagger/services/gallery_service.dart';
 import 'package:quick_tagger/services/tag_service.dart';
@@ -641,6 +639,8 @@ class _HomePageState extends State<HomePage> {
                                     selectedImageCount: selectedImages.length,
                                     filteredTagCount: includedTags.length + excludedTags.length,
                                     hoveredTag: hoveredTag,
+                                    includedTags: includedTags,
+                                    excludedTags: excludedTags,
                                     onImageSelected: (i) {
                                       setState(() {
                                         if (_selectedImagePaths.contains(i.path)) {
@@ -671,6 +671,8 @@ class _HomePageState extends State<HomePage> {
                                     selectedImageCount: selectedImages.length,
                                     filteredTagCount: includedTags.length + excludedTags.length,
                                     hoveredTag: hoveredTag,
+                                    includedTags: includedTags,
+                                    excludedTags: excludedTags,
                                     onImageSelected: (i) {
                                       setState(() {
                                         if (_selectedImagePaths.contains(i.path)) {
@@ -705,6 +707,8 @@ class _HomePageState extends State<HomePage> {
                                     selectedImageCount: selectedImages.length,
                                     filteredTagCount: includedTags.length + excludedTags.length,
                                     hoveredTag: hoveredTag,
+                                    includedTags: includedTags,
+                                    excludedTags: excludedTags,
                                     onImageSelected: (i) {
                                       setState(() {
                                         if (_selectedImagePaths.contains(i.path)) {
@@ -726,7 +730,7 @@ class _HomePageState extends State<HomePage> {
                                   child: Column(
                                     children: [
                                       Container(alignment: Alignment.centerLeft, child: TabBar(tabs: tabHeaders)),
-                                      Expanded(child: Container(child: TabBarView(children: galleryTabs))),
+                                      Expanded(child: TabBarView(children: galleryTabs)),
                                     ],
                                   ),
                                 );

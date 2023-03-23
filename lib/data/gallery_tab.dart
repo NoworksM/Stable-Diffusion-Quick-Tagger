@@ -13,6 +13,8 @@ class GalleryTab extends StatelessWidget {
   final int selectedImageCount;
   final int filteredTagCount;
   final int tagCount;
+  final Set<String> includedTags;
+  final Set<String> excludedTags;
   final Function(TaggedImage)? onImageSelected;
   final Function()? onClearSelection;
 
@@ -26,6 +28,8 @@ class GalleryTab extends StatelessWidget {
     required this.selectedImageCount,
     required this.filteredTagCount,
     required this.tagCount,
+    required this.includedTags,
+    required this.excludedTags,
     this.onImageSelected,
     this.onClearSelection});
 
@@ -35,10 +39,13 @@ class GalleryTab extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: Gallery(initialImages: initialImages,
+          child: Gallery(
+              initialImages: initialImages,
               stream: imageStream,
               hoveredTag: hoveredTag,
               selectedImages: selectedImagePaths,
+              includedTags: includedTags,
+              excludedTags: excludedTags,
               onImageSelected: (i) => onImageSelected?.call(i)),
         ),
         Padding(

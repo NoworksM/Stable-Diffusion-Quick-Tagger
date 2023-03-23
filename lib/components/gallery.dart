@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:quick_tagger/components/gallery_image.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
+import 'package:quick_tagger/ioc.dart';
 import 'package:quick_tagger/pages/tag_editor_page.dart';
+import 'package:quick_tagger/services/gallery_service.dart';
+import 'package:quick_tagger/utils/tag_utils.dart' as tag_utils;
 
 class Gallery extends StatelessWidget {
   final List<TaggedImage>? initialImages;
   final Stream<List<TaggedImage>> stream;
   final String? hoveredTag;
   final Set<String>? selectedImages;
+  final Set<String> includedTags;
+  final Set<String> excludedTags;
   final Function(TaggedImage)? onImageSelected;
+  final _galleryService = getIt.get<IGalleryService>();
 
-  const Gallery({super.key, this.initialImages, required this.stream, this.hoveredTag, this.selectedImages, this.onImageSelected});
+  Gallery({super.key, this.initialImages, required this.stream, required this.includedTags, required this.excludedTags, this.hoveredTag, this.selectedImages, this.onImageSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +27,7 @@ class Gallery extends StatelessWidget {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         } else {
-          final images = snapshot.data!;
+          final images = tag_utils.filterImagesForTagsAndEdits(snapshot.data!, _galleryService.pendingEdits, includedTags, excludedTags);
 
           return GridView.builder(
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
