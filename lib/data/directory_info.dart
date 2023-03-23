@@ -33,11 +33,34 @@ class DirectoryInfo {
 
   @override
   int get hashCode => path.hashCode;
+
+  int get children {
+    if (type == DirectoryType.loraImg) {
+      return _subDirectories.length;
+    } else if (type == DirectoryType.lora) {
+      final img = _subDirectories.firstWhere((element) => element.type == DirectoryType.loraImg, orElse: () => DirectoryInfo.imageLess('', '', DirectoryType.unknown, List.empty()));
+      return img._subDirectories.length;
+    } else {
+      return 0;
+    }
+  }
+
+  List<DirectoryInfo> get imageDirectories {
+    if (type == DirectoryType.loraImg) {
+      return _subDirectories;
+    } else if (type == DirectoryType.lora) {
+      final img = _subDirectories.firstWhere((element) => element.type == DirectoryType.loraImg, orElse: () => DirectoryInfo.imageLess('', '', DirectoryType.unknown, List.empty()));
+      return img._subDirectories;
+    } else {
+      return List.empty();
+    }
+  }
 }
 
 enum DirectoryType {
   normal,
   loraRepeat,
+  loraImg,
   lora,
   unknown
 }

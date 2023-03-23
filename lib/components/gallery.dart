@@ -4,16 +4,18 @@ import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/pages/tag_editor_page.dart';
 
 class Gallery extends StatelessWidget {
+  final List<TaggedImage>? initialImages;
   final Stream<List<TaggedImage>> stream;
   final String? hoveredTag;
   final Set<String>? selectedImages;
   final Function(TaggedImage)? onImageSelected;
 
-  const Gallery({super.key, required this.stream, this.hoveredTag, this.selectedImages, this.onImageSelected});
+  const Gallery({super.key, this.initialImages, required this.stream, this.hoveredTag, this.selectedImages, this.onImageSelected});
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
+      initialData: initialImages,
       stream: stream,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {

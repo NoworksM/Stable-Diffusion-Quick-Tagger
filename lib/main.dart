@@ -8,7 +8,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:quick_tagger/components/image_count_footer.dart';
 import 'package:quick_tagger/components/tag_autocomplete.dart';
 import 'package:quick_tagger/components/tag_sidebar.dart';
+import 'package:quick_tagger/data/directory_info.dart';
 import 'package:quick_tagger/data/edit.dart';
+import 'package:quick_tagger/data/gallery_tab.dart';
 import 'package:quick_tagger/data/tag_count.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
@@ -617,41 +619,117 @@ class _HomePageState extends State<HomePage> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 8.0),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Container(
                           margin: const EdgeInsetsDirectional.symmetric(vertical: 8.0),
-                          child: TagAutocomplete(
-                            onTagSelected: _onTagSelected,
-                            suggestionSearch: _tagService.suggestedGlobalTags,
-                            hintText: 'Add or remove tags'
-                          ),
+                          child:
+                              TagAutocomplete(onTagSelected: _onTagSelected, suggestionSearch: _tagService.suggestedGlobalTags, hintText: 'Add or remove tags'),
                         ),
                         Expanded(
-                          child: Gallery(
-                              stream: _imageStream,
-                              hoveredTag: hoveredTag,
-                              selectedImages: _selectedImagePaths,
-                              onImageSelected: (image) {
-                                setState(() {
-                                  if (_selectedImagePaths.contains(image.path)) {
-                                    _selectedImagePaths.remove(image.path);
+                          child: StreamBuilder<DirectoryInfo>(
+                            initialData: _galleryService.directoryInfo,
+                            stream: _galleryService.directoryInfoStream,
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return Center(
+                                  child: GalleryTab(
+                                    imageStream: _imageStream,
+                                    selectedImagePaths: _selectedImagePaths,
+                                    imageCount: _images.length,
+                                    filteredImageCount: filteredImages.length,
+                                    selectedImageCount: selectedImages.length,
+                                    filteredTagCount: includedTags.length + excludedTags.length,
+                                    hoveredTag: hoveredTag,
+                                    onImageSelected: (i) {
+                                      setState(() {
+                                        if (_selectedImagePaths.contains(i.path)) {
+                                          _selectedImagePaths.remove(i.path);
+                                        } else {
+                                          _selectedImagePaths.add(i.path);
+                                        }
+                                      });
+                                    },
+                                    onClearSelection: () => setState(() {
+                                      _selectedImagePaths.clear();
+                                    }),
+                                  ),
+                                );
+                              } else {
+                                final tabHeaders = <Widget>[];
+                                tabHeaders.add(const Tab(text: 'All Images'));
+
+                                final galleryTabs = <Widget>[];
+                                galleryTabs.add(Center(
+                                  child: GalleryTab(
+                                    initialImages: _images,
+                                    imageStream: _imageStream,
+                                    selectedImagePaths: _selectedImagePaths,
+                                    imageCount: _images.length,
+                                    filteredImageCount: filteredImages.length,
+                                    selectedImageCount: selectedImages.length,
+                                    filteredTagCount: includedTags.length + excludedTags.length,
+                                    hoveredTag: hoveredTag,
+                                    onImageSelected: (i) {
+                                      setState(() {
+                                        if (_selectedImagePaths.contains(i.path)) {
+                                          _selectedImagePaths.remove(i.path);
+                                        } else {
+                                          _selectedImagePaths.add(i.path);
+                                        }
+                                      });
+                                    },
+                                    onClearSelection: () => setState(() {
+                                      _selectedImagePaths.clear();
+                                    }),
+                                  ),
+                                ));
+
+                                for (final dir in snapshot.data!.imageDirectories) {
+                                  late final Tab dirTab;
+                                  if (dir.type == DirectoryType.lora) {
+                                    dirTab = Tab(text: '(${dir.repeats}) ${dir.name}');
                                   } else {
-                                    _selectedImagePaths.add(image.path);
+                                    dirTab = Tab(text: dir.name);
                                   }
-                                });
-                              }),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: ImageCountFooter(
-                            images: _images.length,
-                            filtered: filteredImages.length,
-                            selected: selectedImages.length,
-                            filteredTags: includedTags.length + excludedTags.length,
-                            onClearSelection: () => setState(() {
-                              _selectedImagePaths.clear();
-                            }),
-                            totalTags: _images.isNotEmpty ? _images.map((e) => e.tagFiles).flatten().map((i) => i.tags.length).reduce((v, e) => v + e) : 0,
+
+                                  tabHeaders.add(dirTab);
+
+                                  galleryTabs.add(GalleryTab(
+                                    initialImages: _galleryService.getImagesForDirectory(dir),
+                                    imageStream: _galleryService.getStreamForDirectory(dir),
+                                    selectedImagePaths: _selectedImagePaths,
+                                    imageCount: _images.length,
+                                    filteredImageCount: filteredImages.length,
+                                    selectedImageCount: selectedImages.length,
+                                    filteredTagCount: includedTags.length + excludedTags.length,
+                                    hoveredTag: hoveredTag,
+                                    onImageSelected: (i) {
+                                      setState(() {
+                                        if (_selectedImagePaths.contains(i.path)) {
+                                          _selectedImagePaths.remove(i.path);
+                                        } else {
+                                          _selectedImagePaths.add(i.path);
+                                        }
+                                      });
+                                    },
+                                    onClearSelection: () => setState(() {
+                                      _selectedImagePaths.clear();
+                                    }),
+                                  ));
+                                }
+
+                                return DefaultTabController(
+                                  length: galleryTabs.length,
+                                  child: Column(
+                                    children: [
+                                      Container(alignment: Alignment.centerLeft, child: TabBar(tabs: tabHeaders)),
+                                      Expanded(child: Container(child: TabBarView(children: galleryTabs))),
+                                    ],
+                                  ),
+                                );
+                              }
+                            },
                           ),
                         ),
                       ],
@@ -662,22 +740,21 @@ class _HomePageState extends State<HomePage> {
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: TagSidebar(
-                      tagsStream: _tagCountStream,
-                      imageCount: filteredImages.length,
-                      includedTags: includedTags.toList(),
-                      excludedTags: excludedTags.toList(),
-                      initialPendingEditCounts: tag_utils.transformEditsToCounts(_galleryService.pendingEdits),
-                      pendingEditCountsStream: _galleryService.pendingEditsStream
-                          .transform(StreamTransformer.fromHandlers(handleData: (d, s) => s.add(tag_utils.transformEditsToCounts(d)))),
-                      onTagHover: (t) => setState(() {
-                        hoveredTag = t;
-                      }),
-                      onIncludedTagSelected: _onIncludedTagSelected,
-                      onExcludedTagSelected: _onExcludedTagSelected,
-                      onRemoveTagSelected: _onRemoveTagSelected,
-                      onCancelPendingTagAddition: _onCancelPendingTagAddition,
-                      onCancelPendingTagRemoval: _onCancelPendingTagRemoval
-                    ),
+                        tagsStream: _tagCountStream,
+                        imageCount: filteredImages.length,
+                        includedTags: includedTags.toList(),
+                        excludedTags: excludedTags.toList(),
+                        initialPendingEditCounts: tag_utils.transformEditsToCounts(_galleryService.pendingEdits),
+                        pendingEditCountsStream: _galleryService.pendingEditsStream
+                            .transform(StreamTransformer.fromHandlers(handleData: (d, s) => s.add(tag_utils.transformEditsToCounts(d)))),
+                        onTagHover: (t) => setState(() {
+                              hoveredTag = t;
+                            }),
+                        onIncludedTagSelected: _onIncludedTagSelected,
+                        onExcludedTagSelected: _onExcludedTagSelected,
+                        onRemoveTagSelected: _onRemoveTagSelected,
+                        onCancelPendingTagAddition: _onCancelPendingTagAddition,
+                        onCancelPendingTagRemoval: _onCancelPendingTagRemoval),
                   ))
             ],
           ),
