@@ -27,6 +27,12 @@ class DirectoryInfo {
   UnmodifiableListView<TaggedImage> get images => UnmodifiableListView(_images);
 
   UnmodifiableListView<DirectoryInfo> get subDirectories => UnmodifiableListView(_subDirectories);
+
+  @override
+  bool operator ==(Object other) => identical(this, other) || other is DirectoryInfo && runtimeType == other.runtimeType && path == other.path;
+
+  @override
+  int get hashCode => path.hashCode;
 }
 
 enum DirectoryType {

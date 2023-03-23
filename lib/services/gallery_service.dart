@@ -26,6 +26,8 @@ abstract class IGalleryService {
 
   Stream<List<TaggedImage>> get galleryImagesStream;
 
+  Stream<UnmodifiableListView<TaggedImage>> getStreamForDirectory(DirectoryInfo directoryInfo);
+
   Stream<PendingEdits> get pendingEditsStream;
 
   PendingEdits get pendingEdits;
@@ -108,6 +110,9 @@ class GalleryService implements IGalleryService {
   final StreamController<List<TaggedImage>> _imageStreamController = StreamController();
   late final Stream<List<TaggedImage>> _imageStream = _imageStreamController.stream.asBroadcastStream();
 
+  final HashMap<DirectoryInfo, StreamController<UnmodifiableListView<TaggedImage>>> _imageDirectoryStreamControllers = HashMap();
+  final HashMap<DirectoryInfo, Stream<UnmodifiableListView<TaggedImage>>> _imageDirectoryStreams = HashMap();
+
   DirectoryInfo? _directoryInfo;
   final StreamController<DirectoryInfo> _directoryInfoStreamController = StreamController();
   late final Stream<DirectoryInfo> _directoryInfoStream = _directoryInfoStreamController.stream.asBroadcastStream();
@@ -137,13 +142,23 @@ class GalleryService implements IGalleryService {
   @override
   UnmodifiableListView<TaggedImage> get galleryImages => UnmodifiableListView(_images);
 
-  @override
-  Future<void> loadImages(String path) async {
+  void _clearGallery() {
     _imageService.clearCache();
-    final directory = Directory(path);
+    _pendingEdits.clear();
+    _pendingEditsStreamController.add(pendingEdits);
 
     _images = List.empty(growable: true);
     _imageStreamController.add(_images);
+
+    _imageDirectoryStreamControllers.clear();
+    _imageDirectoryStreams.clear();
+  }
+
+  @override
+  Future<void> loadImages(String path) async {
+    _clearGallery();
+
+    final directory = Directory(path);
 
     final List<TaggedImage> images = List.empty(growable: true);
     var tagCounts = List<TagCount>.empty(growable: true);
@@ -225,6 +240,9 @@ class GalleryService implements IGalleryService {
     final tags = HashSet<String>();
     final tagCounts = List<TagCount>.empty(growable: true);
 
+    final controller = _imageDirectoryStreamControllers.putIfAbsent(directory, () => StreamController());
+    _imageDirectoryStreams.putIfAbsent(directory, () => controller.stream.asBroadcastStream());
+
     final newImages = List<TaggedImage>.empty(growable: true);
     await for (final file in Directory(directory.path).list()) {
       if (file_utils.isSupportedFile(file.path)) {
@@ -244,6 +262,7 @@ class GalleryService implements IGalleryService {
         final image = TaggedImage.file(file.path, fileTagInfo);
 
         newImages.add(image);
+        controller.add(UnmodifiableListView(newImages));
 
         imageStreamController.add(image);
         tagCountsStreamController.add(tagCounts);
@@ -539,4 +558,10 @@ class GalleryService implements IGalleryService {
 
   @override
   Stream<DirectoryInfo> get directoryInfoStream => _directoryInfoStream;
+
+  @override
+  Stream<UnmodifiableListView<TaggedImage>> getStreamForDirectory(DirectoryInfo directory) {
+    final controller = _imageDirectoryStreamControllers.putIfAbsent(directory, () => StreamController());
+    return _imageDirectoryStreams.putIfAbsent(directory, () => controller.stream.asBroadcastStream());
+  }
 }
