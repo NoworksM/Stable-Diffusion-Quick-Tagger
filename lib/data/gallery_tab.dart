@@ -12,6 +12,7 @@ class GalleryTab extends StatelessWidget {
   final int filteredImageCount;
   final int selectedImageCount;
   final int filteredTagCount;
+  final int tagCount;
   final Function(TaggedImage)? onImageSelected;
   final Function()? onClearSelection;
 
@@ -24,6 +25,7 @@ class GalleryTab extends StatelessWidget {
     required this.filteredImageCount,
     required this.selectedImageCount,
     required this.filteredTagCount,
+    required this.tagCount,
     this.onImageSelected,
     this.onClearSelection});
 
@@ -46,6 +48,7 @@ class GalleryTab extends StatelessWidget {
             filtered: filteredImageCount,
             selected: selectedImageCount,
             filteredTags: filteredTagCount,
+            totalTags: tagCount,
             onClearSelection: () => onClearSelection?.call(),
           ),
         ),

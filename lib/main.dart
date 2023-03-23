@@ -653,6 +653,7 @@ class _HomePageState extends State<HomePage> {
                                     onClearSelection: () => setState(() {
                                       _selectedImagePaths.clear();
                                     }),
+                                    tagCount: _images.isNotEmpty ? _images.map((e) => e.tagFiles).flatten().map((i) => i.tags.length).reduce((v, e) => v + e) : 0,
                                   ),
                                 );
                               } else {
@@ -681,7 +682,7 @@ class _HomePageState extends State<HomePage> {
                                     },
                                     onClearSelection: () => setState(() {
                                       _selectedImagePaths.clear();
-                                    }),
+                                    }), tagCount: _images.isNotEmpty ? _images.map((e) => e.tagFiles).flatten().map((i) => i.tags.length).reduce((v, e) => v + e) : 0,
                                   ),
                                 ));
 
@@ -716,6 +717,7 @@ class _HomePageState extends State<HomePage> {
                                     onClearSelection: () => setState(() {
                                       _selectedImagePaths.clear();
                                     }),
+                                    tagCount: _images.isNotEmpty ? _images.map((e) => e.tagFiles).flatten().map((i) => i.tags.length).reduce((v, e) => v + e) : 0,
                                   ));
                                 }
 
