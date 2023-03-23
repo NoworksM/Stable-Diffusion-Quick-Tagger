@@ -218,20 +218,9 @@ class GalleryService implements IGalleryService {
 
   /// Get directory info for a directory and it's subdirectories
   FutureOr<DirectoryInfo> _loadDirectoryInfo(Directory directory) async {
-    late final DirectoryType directoryType;
+    late final DirectoryType type;
     late final int? repeats;
     var name = directory.path.split(Platform.pathSeparator).last;
-
-    final match = _loraRepeatFolderSyntax.matchAsPrefix(name);
-
-    if (match != null) {
-      directoryType = DirectoryType.loraRepeat;
-      repeats = int.parse(match.group(1)!);
-      name = match.group(2)!;
-    } else {
-      directoryType = DirectoryType.normal;
-      repeats = null;
-    }
 
     final subDirs = await directory
         .list()
@@ -240,7 +229,27 @@ class GalleryService implements IGalleryService {
         .asyncMap((d) => _loadDirectoryInfo(d))
         .toList();
 
-    return DirectoryInfo.imageLess(directory.path, name, directoryType, subDirs, repeats: repeats);
+    final match = _loraRepeatFolderSyntax.matchAsPrefix(name);
+
+    if (match != null) {
+      type = DirectoryType.loraRepeat;
+      repeats = int.parse(match.group(1)!);
+      name = match.group(2)!;
+    } else if (subDirs.isEmpty) {
+      type = DirectoryType.normal;
+      repeats = null;
+    } else if (name == 'img' && subDirs.every((i) => i.type == DirectoryType.loraRepeat)) {
+      type = DirectoryType.loraImg;
+      repeats = null;
+    } else if (subDirs.any((d) => d.name == 'img' && d.type == DirectoryType.loraImg)) {
+      type = DirectoryType.lora;
+      repeats = null;
+    } else {
+      type = DirectoryType.normal;
+      repeats = null;
+    }
+
+    return DirectoryInfo.imageLess(directory.path, name, type, subDirs, repeats: repeats);
   }
 
   Future<_ImageDirectoryResults> _loadImagesForDirectory(DirectoryInfo directory, StreamController<TaggedImage> imageStreamController, StreamController<List<TagCount>> tagCountsStreamController) async {
