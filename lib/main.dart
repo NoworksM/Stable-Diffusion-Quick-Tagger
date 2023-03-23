@@ -690,7 +690,7 @@ class _HomePageState extends State<HomePage> {
 
                                 for (final dir in snapshot.data!.imageDirectories) {
                                   late final Tab dirTab;
-                                  if (dir.type == DirectoryType.lora) {
+                                  if (dir.type == DirectoryType.loraRepeat) {
                                     dirTab = Tab(text: '(${dir.repeats}) ${dir.name}');
                                   } else {
                                     dirTab = Tab(text: dir.name);
