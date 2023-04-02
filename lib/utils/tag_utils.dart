@@ -171,7 +171,7 @@ List<TaggedImage> filterImagesForTagsAndEdits(List<TaggedImage> images, Map<Stri
   return filteredImages;
 }
 
-transformEditsToCounts(PendingEdits? edits) {
+TagGroupedCounts transformEditsToCounts(PendingEdits? edits) {
   if (edits == null) {
     return TagGroupedCounts(List.empty(), List.empty());
   }

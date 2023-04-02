@@ -107,7 +107,7 @@ class GalleryService implements IGalleryService {
   final ITagService _tagService;
   final IImageService _imageService;
 
-  List<TaggedImage> _images = List.empty(growable: false);
+  List<TaggedImage> _images = List.empty(growable: true);
   final StreamController<List<TaggedImage>> _imageStreamController = StreamController();
   late final Stream<List<TaggedImage>> _imageStream = _imageStreamController.stream.asBroadcastStream();
 
@@ -308,7 +308,12 @@ class GalleryService implements IGalleryService {
       return;
     }
 
-    _images[index] = TaggedImage(image.path, HashSet<String>.from(tags), image.tagFiles);
+    final updatedImages = List<TaggedImage>.from(_images, growable: true);
+
+    updatedImages[index] = TaggedImage(image.path, HashSet<String>.from(tags), image.tagFiles);
+
+    _images = UnmodifiableListView(updatedImages);
+
 
     if (updateImageStream) {
       _imageStreamController.add(_images);
@@ -537,7 +542,7 @@ class GalleryService implements IGalleryService {
   _convertTagFileForImageIndex(int index, TagSeparator separator, TagSpaceCharacter spaceCharacter, TagPathFormat pathFormat, bool deleteOld) async {
     final image = _images[index];
 
-    final newTagFile = TagFile(pathFormat.buildTagFilePathFromImagePath(image.path), image.tags.toList(), separator, spaceCharacter);
+    final newTagFile = TagFile(pathFormat.buildTagFilePathFromImagePath(image.path), image.tags.toList(growable: true), separator, spaceCharacter);
     final tagFiles = List<TagFile>.empty(growable: true);
     tagFiles.add(newTagFile);
 

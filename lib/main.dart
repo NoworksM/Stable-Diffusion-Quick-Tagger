@@ -11,6 +11,7 @@ import 'package:quick_tagger/data/directory_info.dart';
 import 'package:quick_tagger/data/edit.dart';
 import 'package:quick_tagger/data/gallery_tab.dart';
 import 'package:quick_tagger/data/tag_count.dart';
+import 'package:quick_tagger/data/tag_grouped_counts.dart';
 import 'package:quick_tagger/data/tagfile_type.dart';
 import 'package:quick_tagger/data/tagged_image.dart';
 import 'package:quick_tagger/ioc.dart';
@@ -739,8 +740,7 @@ class _HomePageState extends State<HomePage> {
                         includedTags: includedTags.toList(),
                         excludedTags: excludedTags.toList(),
                         initialPendingEditCounts: tag_utils.transformEditsToCounts(_galleryService.pendingEdits),
-                        pendingEditCountsStream: _galleryService.pendingEditsStream
-                            .transform(StreamTransformer.fromHandlers(handleData: (d, s) => s.add(tag_utils.transformEditsToCounts(d)))),
+                        pendingEditCountsStream: _galleryService.pendingEditsStream.map<TagGroupedCounts>(tag_utils.transformEditsToCounts),
                         onTagHover: (t) => setState(() {
                               hoveredTag = t;
                             }),
