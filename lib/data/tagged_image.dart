@@ -12,7 +12,7 @@ class TaggedImage {
 
   TaggedImage.noTags(this.path)
       : tags = HashSet<String>.identity(),
-        tagFiles = List.empty();
+        tagFiles = List.empty(growable: true);
 
   TaggedImage.file(this.path, FileTagInfo fileTagInfo)
     : tags = fileTagInfo.tags,
