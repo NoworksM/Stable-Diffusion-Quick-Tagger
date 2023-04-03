@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:injectable/injectable.dart';
 import 'package:quick_tagger/data/directory_info.dart';
 import 'package:quick_tagger/data/edit.dart';
@@ -169,7 +170,9 @@ class GalleryService implements IGalleryService {
     final imageLoadStreamController = StreamController<TaggedImage>();
     final tagCountLoadStreamController = StreamController<List<TagCount>>();
 
-    imageLoadStreamController.stream.listen((i) {
+    final imageLoadStream = imageLoadStreamController.stream.asBroadcastStream();
+
+    imageLoadStream.listen((i) {
       images.add(i);
       _images = UnmodifiableListView(images);
       _imageStreamController.add(_images);
@@ -214,6 +217,9 @@ class GalleryService implements IGalleryService {
 
     _imageStreamController.add(_images);
     _tagService.replaceTagCounts(tagCounts);
+
+    imageLoadStreamController.close();
+    tagCountLoadStreamController.close();
   }
 
   /// Get directory info for a directory and it's subdirectories
@@ -283,7 +289,11 @@ class GalleryService implements IGalleryService {
           tagCount.count++;
         }
 
-        final image = TaggedImage.file(file.path, fileTagInfo);
+        final digest = await _imageService.hashImage(file.path);
+
+        final image = TaggedImage.file(file.path, fileTagInfo, digest);
+
+        await _imageService.loadImage(image.path);
 
         newImages.add(image);
         directoryImages.add(image);
@@ -310,10 +320,9 @@ class GalleryService implements IGalleryService {
 
     final updatedImages = List<TaggedImage>.from(_images, growable: true);
 
-    updatedImages[index] = TaggedImage(image.path, HashSet<String>.from(tags), image.tagFiles);
+    updatedImages[index] = TaggedImage(image.path, HashSet<String>.from(tags), image.tagFiles, image.digest);
 
     _images = UnmodifiableListView(updatedImages);
-
 
     if (updateImageStream) {
       _imageStreamController.add(_images);
@@ -551,7 +560,7 @@ class GalleryService implements IGalleryService {
     }
 
     await tag_utils.save(newTagFile, image.tags);
-    _images[index] = TaggedImage(image.path, image.tags, tagFiles);
+    _images[index] = TaggedImage(image.path, image.tags, tagFiles, image.digest);
 
     if (deleteOld) {
       for (final tagFile in image.tagFiles) {

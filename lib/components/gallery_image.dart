@@ -45,7 +45,7 @@ class GalleryImage extends StatelessWidget {
         dimension: 200,
         child: Stack(fit: StackFit.expand, children: [
           FutureBuilder<CachedImage>(
-            future: _imageService.loadImage(image),
+            future: _imageService.loadImage(image.path),
             builder: (context, snapshot) {
               if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -79,6 +79,9 @@ class GalleryImage extends StatelessWidget {
                 child: Center(
                     child: Row(
                   children: [
+                    Tooltip(
+                      message: image.digest.toString(),
+                        child: const Icon(Icons.tag)),
                     const Icon(Icons.sell),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4.0),

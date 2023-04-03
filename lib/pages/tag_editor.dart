@@ -166,7 +166,7 @@ class _TagEditorState extends State<TagEditor> {
                         child: Center(
                           child: FutureBuilder<CachedImage>(
                             key: Key('imageView:${image.path}'),
-                            future: _imageService.loadImage(image),
+                            future: _imageService.loadImage(image.path),
                             builder: (context, snapshot) {
                               if (!snapshot.hasData) {
                                 return const CircularProgressIndicator();
