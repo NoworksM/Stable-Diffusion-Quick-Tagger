@@ -14,14 +14,45 @@ class Edit {
   String toString() {
     return 'Edit{type: $type, value: $value}';
   }
+
+  Edit.fromJson(Map<String, dynamic> json)
+    : type = EditType.fromJson(json['type']),
+      value = json['value'];
+
+  toJson() {
+    return {
+      'type': type.toJson(),
+      'value': value,
+    };
+  }
 }
 
 enum EditType {
   add,
-  remove
-}
+  remove;
 
-extension EditTypeExtensions on EditType {
+  static EditType fromJson(String json) {
+    switch (json) {
+      case 'add':
+        return EditType.add;
+      case 'remove':
+        return EditType.remove;
+      default:
+        throw ArgumentError();
+    }
+  }
+
+  String toJson() {
+    switch (this) {
+      case EditType.add:
+        return 'add';
+      case EditType.remove:
+        return 'remove';
+      default:
+        throw ArgumentError();
+    }
+  }
+
   EditType invert() {
     switch (this) {
       case EditType.add:
